@@ -1,0 +1,233 @@
+# Connect Your AI Tool to Continuity
+
+There are two ways to hook an AI tool up to Continuity, and they suit different clients:
+
+- **Connector (OAuth MCP)** — paste a URL into your client, sign in through your browser, and approve access once; from then on your AI tool can work with your Continuity projects directly. (Behind the scenes: MCP is the standard protocol AI tools use to talk to services, and OAuth is the browser sign-in that authorizes it.) No keys to copy, revocable from your Continuity account at any time. Best for hosted and chat-style clients (claude.ai surfaces, ChatGPT). The server URL for Claude surfaces is `https://stagecontinuity.com/mcp`; ChatGPT uses its own URL (see [ChatGPT](#chatgpt)).
+- **Skills + API key** — install the [Continuity skill docs](https://github.com/StageContinuity/ContinuitySkills) into your agent and authenticate against the REST API with an API key. Best for CLI agents (Codex, OpenClaw, Hermes, local Claude Code) and for the full V1 API surface, including binary file uploads, which the hosted connector does not offer.
+
+**Before you start:** you need a Continuity account — sign up at [folio.stagecontinuity.com](https://folio.stagecontinuity.com). Three domains appear in this guide: **stagecontinuity.com** is the main site, **folio.stagecontinuity.com** is the web app (and where the consent screen you'll approve is shown), and **data.stagecontinuity.com** is the API host.
+
+> **Note:** The Continuity connector is currently in early access. If the OAuth flow is not yet enabled for your account and your client supports skills (Claude Code, Codex, OpenClaw, Hermes), use the skills + API key path in the meantime. ChatGPT has no skills path — if the connector isn't enabled for your account yet, wait for general availability.
+
+## Which path should I use?
+
+| Client | Connector (OAuth MCP) | Skills + API key | Note |
+| --- | :---: | :---: | --- |
+| Claude Code (CLI / desktop) | ✅ via claude.ai | ✅ | Add the connector on claude.ai; it flows into Claude Code automatically |
+| Claude Code on the web & Claude Cowork | ✅ | ◐ | Connector recommended, configured at the Claude account level; Cowork can also install Agent Skills, but the connector keeps API keys out of the client |
+| ChatGPT (web) | ✅ read-only | — | Paid plan required; uses its own server URL (see [ChatGPT](#chatgpt)); exposes `search`, `fetch`, and `getting_started` only |
+| Codex (CLI / IDE) | — | ✅ | Codex's MCP OAuth login isn't compatible with Continuity's OAuth server today |
+| OpenClaw | — | ✅ | The Continuity MCP endpoint is OAuth-only; OpenClaw's native MCP client doesn't support OAuth flows |
+| Hermes Agent (CLI / desktop) | — | ✅ | Hermes's MCP OAuth login requires dynamic client registration, which Continuity's OAuth server doesn't offer |
+
+✅ = supported · ◐ = possible but not the recommended path · — = not supported
+
+## Client setup guides
+
+**About the skills installer** (applies to every skills-path client below): `npx skills add …` is interactive — it prompts you to pick skills, **which agents to install for** (this choice matters: see each client's section), and an install scope, then shows a third-party security assessment before finishing. That assessment may flag the `authentication` skill as high-risk; this is a keyword-driven false positive — the skills are documentation-only (no scripts or executables), and every endpoint they describe points at Continuity's own domains. Review the installed SKILL.md files if you want to confirm, then proceed. You can also paste the install command into your agent's chat and let the agent run the installer itself — it completes non-interactively with the installer's default targets. Those defaults have been observed to cover Claude Code, but they are the installer's choice, not a guarantee: afterwards, run your client section's confirmation step (for Claude Code, `ls .claude/skills/`) before relying on the skills.
+
+### Claude Code (CLI and desktop app)
+
+**Connector path (recommended):**
+
+1. On claude.ai, open **Customize > Connectors** ([claude.ai/customize/connectors](https://claude.ai/customize/connectors)). Pick Continuity from the directory if it's listed, or add it as a custom connector with server URL `https://stagecontinuity.com/mcp`. On Team/Enterprise plans, an Owner adds it in **Organization settings > Connectors** first; members then connect individually.
+2. Your browser opens Continuity's consent screen on folio.stagecontinuity.com — **Authorize** plus your client's name — listing four scopes (see [Using the connector](#using-the-connector)). Click **Allow**.
+3. In Claude Code, make sure you're logged in with your claude.ai account — run `/status` to check. Connectors do **not** load when your session authenticates via `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, an `apiKeyHelper`, Bedrock/Vertex, or a setup token.
+4. Run `/mcp` — connectors from claude.ai appear with a claude.ai indicator. In the desktop app you can also manage them under **Settings > Connectors**.
+5. Verify with a read-only call: ask *"List my Continuity projects"*.
+
+> **Advanced:** You can try adding the server directly with `claude mcp add --transport http continuity https://stagecontinuity.com/mcp` and authenticating via `/mcp` or `claude mcp login continuity`. However, Continuity's OAuth server does not support dynamic client registration, so this direct flow may fail with *"does not support dynamic client registration"*. If it does, use the claude.ai connector path above.
+
+**Skills + API key path:**
+
+1. In your project folder, install the skill docs: `npx skills add https://github.com/StageContinuity/ContinuitySkills` (requires Node.js 18+; `skills` is the open-source skills CLI, fetched on demand by npx; re-run later to update). **When the installer asks which agents to install to, select "Claude Code."** That selection is what creates `.claude/skills/` symlinks in your project — the location Claude Code actually reads. The universal `.agents/skills` target alone is **not** discovered by Claude Code, so skipping the picker installs the skills somewhere Claude Code never looks, with no error anywhere. Confirm with `ls .claude/skills/`.
+2. Get an API key (see [Using API keys](#using-api-keys)) and set it before launching Claude Code. macOS/Linux: `export CONTINUITY_API_KEY="<your-api-key>"`. Windows (PowerShell): persist it with `[Environment]::SetEnvironmentVariable("CONTINUITY_API_KEY", "<your-api-key>", "User")`, then **fully restart Claude Code** — environment variables are read at process start, so a new tab or window is not enough.
+3. Launch Claude Code **in the same folder you installed into** — a project-level install is only visible from that folder — and ask *"How do I use Continuity skills?"* — this activates the getting-started skill for a guided, read-only first run — then *"List my Continuity projects"* to verify.
+
+### Claude Code on the web and Claude Cowork
+
+1. Add Continuity once at the account level: on claude.ai, open **Customize > Connectors**, click **+** / **Add custom connector**, and paste `https://stagecontinuity.com/mcp` (or select Continuity from the directory if listed). On Team/Enterprise plans, an Owner adds it in **Organization settings > Connectors** first; members then connect individually.
+2. Approve Continuity's **Authorize** consent screen.
+3. **Claude Code on the web:** log in to [claude.ai/code](https://claude.ai/code) with the same account and start a new session — connectors added in claude.ai are provisioned into web sessions automatically.
+4. **Claude Cowork:** no separate setup. Control which connectors are active via the **+** menu in the chat box or the **Customize > Connectors** page.
+5. Verify: ask *"List my Continuity projects"*. Successful responses include `webUrl` links into the Continuity web app.
+
+> Freshly added connectors may not appear in an existing conversation — start a new session. Note that on the hosted connector surface, `file_create` (Markdown, up to 1 MiB) is the only way to write file content; binary uploads require the skills + API key path on a local client. Free claude.ai plans are limited to one custom connector. Cowork can also install Agent Skills, but the connector is the recommended path on these surfaces — it keeps API keys out of the client.
+
+### ChatGPT
+
+Custom connectors require a paid ChatGPT plan — Plus, Pro, Business/Team, Enterprise, or Edu; they're not available on the free tier. Exact menu naming varies as ChatGPT evolves; on current ChatGPT you may need to enable Developer mode first.
+
+1. Open **Settings > Connectors > Advanced** and enable **Developer mode**.
+2. Go to **Settings > Connectors > Create** (on some builds: **Custom connectors > Add**).
+3. Name the connector **Continuity**, paste the server URL `https://stagecontinuity.com/mcp/chatgpt`, and leave authentication set to **OAuth**. ChatGPT has its own adapter endpoint — don't use the `https://stagecontinuity.com/mcp` URL meant for Claude surfaces.
+4. ChatGPT redirects to folio.stagecontinuity.com and shows Continuity's **Authorize ChatGPT** consent screen. Click **Allow**. The screen lists all four scopes — approval is all-or-nothing in v1 — but the ChatGPT surface can only ever call its three read-only tools, so the `write`, `invite`, and `render` scopes are never exercised there.
+5. The connector appears in the tool picker — start a new chat; existing chats won't see the connector.
+
+**What you get in ChatGPT:** a read-only surface with exactly three tools — `search` (full-text search with links into Continuity), `fetch` (read a file or list a project/folder's children), and `getting_started` (the onboarding guide). The full `project_*` / `folder_*` / `file_*` tool set is **not** available from ChatGPT, and asking for those tools returns an unknown-tool error.
+
+**Skills + API key: not supported** — ChatGPT can't load local skill docs or hold an API key.
+
+Try it: ask *"How do I use Continuity?"* — this runs the `getting_started` tool — or ask ChatGPT to find a file or folder by topic.
+
+### Codex (OpenAI Codex CLI / IDE extension)
+
+The connector path is not available for Codex today (Codex's MCP OAuth login requires dynamic client registration, which Continuity's OAuth server doesn't offer). Use skills + an API key:
+
+1. Create a Continuity account at [folio.stagecontinuity.com](https://folio.stagecontinuity.com), then create an API key at [folio.stagecontinuity.com/api-keys](https://folio.stagecontinuity.com/api-keys). **Save it immediately — it's shown only once.**
+2. In your project repository, install the skill docs: `npx skills add https://github.com/StageContinuity/ContinuitySkills -a codex` (or choose Codex when prompted; requires Node.js 18+ — `skills` is the open-source skills CLI, fetched on demand by npx). The CLI prompts for the target — project-level `.agents/skills/` is the safest choice — then confirm the files landed: `ls .agents/skills/`. Re-run the same command to update.
+3. Set the key in the environment Codex runs in, before launching it. macOS/Linux: `export CONTINUITY_API_KEY="<your-api-key>"`. Windows (PowerShell): `[Environment]::SetEnvironmentVariable("CONTINUITY_API_KEY", "<your-api-key>", "User")`, then open a **new terminal window** (not just a new tab — tabs inherit the terminal app's original environment) for it to take effect.
+4. Start Codex **in the same folder you ran the install in** — a project-level install is only visible from that directory — and ask *"How do I use Continuity skills?"* — this activates the getting-started skill. You can also invoke a skill explicitly via `/skills` or a `$skill-name` mention.
+5. Verify with *"List my Continuity projects"* — if projects come back, the key works.
+6. Optional: if Codex answers from memory without ever calling data.stagecontinuity.com, implicit skill activation isn't kicking in — add a note to your repo's `AGENTS.md` pointing at the skills in `.agents/skills/` and stating that Continuity V1 calls go to `https://data.stagecontinuity.com/api` with the `X-API-Key` header.
+
+> **Heads-up:** Codex also reads a **global** `~/.agents/skills/` directory. If an older install exists there, launching Codex outside your project folder silently falls back to those copies — you'll get stale skill docs (and possibly skills you never installed) with no warning. If Codex describes capabilities you don't recognize, check that location and update or remove it.
+
+**Codex cloud / web:** the skills path works there too. Add `CONTINUITY_API_KEY` as a secret in your Codex **environment settings**, then paste the `npx skills add https://github.com/StageContinuity/ContinuitySkills` command into the chat — the agent installs the skills into its cloud workspace itself. The install is per-environment, and when you rotate your API key, remember to update the Codex environment secret as well.
+
+### OpenClaw
+
+The connector path is not available for OpenClaw today: the Continuity MCP endpoint is OAuth-only, and OpenClaw's native MCP client supports only static headers. API keys work **only** against the REST API at data.stagecontinuity.com — a static-header MCP config pointed at `https://stagecontinuity.com/mcp` cannot work. Use skills + an API key instead.
+
+Skills are documentation, not MCP tools — nothing new appears in OpenClaw's tool list. The agent calls the REST API directly, so it needs shell/HTTP tooling enabled.
+
+1. Create a Continuity account at [folio.stagecontinuity.com](https://folio.stagecontinuity.com) and create an API key at [folio.stagecontinuity.com/api-keys](https://folio.stagecontinuity.com/api-keys). **Save it immediately — it's shown only once.**
+2. Install the skills globally: `npx skills add https://github.com/StageContinuity/ContinuitySkills -a openclaw -g` — this installs into `~/.openclaw/skills/`, loaded for all agents. (Run without `-g` inside your agent workspace to install into `<workspace>/skills`, which takes precedence.) Re-run to update.
+3. Review the installed SKILL.md files before use — OpenClaw's own security guidance says to treat third-party skills as untrusted and read them before enabling.
+4. Provide the key. Simplest: set `CONTINUITY_API_KEY` in the environment of the process that runs OpenClaw — your shell profile, container env, or service definition. For example: `CONTINUITY_API_KEY="<your-key>" <your OpenClaw start command>`. Alternative: set it per skill in `~/.openclaw/openclaw.json` under `skills.entries`, where each entry key is a skill's directory name (e.g. `authentication`): `{ "skills": { "entries": { "authentication": { "env": { "CONTINUITY_API_KEY": "<your-key>" } } } } }` — OpenClaw injects it per agent run if not already set. The environment-level approach covers every Continuity skill with one setting.
+5. Start a **new** session — the eligible-skills snapshot is taken at session start.
+6. Verify: ask *"List my Continuity projects"*. The agent should call `https://data.stagecontinuity.com/api/v1/projects` with the `X-API-Key` header and show your projects.
+
+### Hermes Agent
+
+The connector path is not available for Hermes today (Hermes's MCP OAuth login requires dynamic client registration, which Continuity's OAuth server doesn't offer). Use skills + an API key:
+
+The Hermes CLI and the Hermes Desktop app share one home directory (`~/.hermes` on macOS and Linux, `%LOCALAPPDATA%\hermes` on Windows), so the steps below cover both.
+
+1. Create a Continuity account at [folio.stagecontinuity.com](https://folio.stagecontinuity.com) and create an API key at [folio.stagecontinuity.com/api-keys](https://folio.stagecontinuity.com/api-keys). **Save it immediately, it's shown only once.**
+2. Install the skills globally: `npx skills add https://github.com/StageContinuity/ContinuitySkills -a hermes-agent -g` (the agent name is `hermes-agent`, not `hermes`). This installs into `skills/` under the Hermes home, where every Hermes surface reads them. Re-run to update. Confirm with `hermes skills list`, the Continuity skills should show as `enabled`.
+3. Review the installed SKILL.md files before use, treat third-party skills as untrusted and read them before enabling.
+4. Add the key to Hermes's `.env` file, `~/.hermes/.env` on macOS and Linux, `%LOCALAPPDATA%\hermes\.env` on Windows, creating the file if it doesn't exist: `CONTINUITY_API_KEY=<your-api-key>`. On macOS and Linux restrict access to it: `chmod 600 ~/.hermes/.env` (on Windows, `%LOCALAPPDATA%` is already per-user). Use the `.env` file, not a shell variable. The desktop app starts its agent with its own environment, so shell exports and Windows User-scope variables never reach it. The `.env` file is read on every surface. For a CLI-only session a shell export also works, but if the same variable is set in both, the `.env` value wins: Hermes loads `.env` over existing shell exports, so a stale key in `.env` shadows a corrected export.
+5. Restart Hermes: start a new CLI session, or fully quit the desktop app **including the system tray icon** and relaunch it.
+6. Verify: ask *"List my Continuity projects"*. The agent should call `https://data.stagecontinuity.com/api/v1/projects` with the `X-API-Key` header and show your projects.
+
+## Using the connector
+
+### The consent screen
+
+When you connect, folio.stagecontinuity.com shows a consent screen — **Authorize** plus your client's name — listing four scopes. Approval is all-or-nothing in v1 — you approve all four or decline:
+
+| Scope | What it allows |
+| --- | --- |
+| `read` | List and read every catalogued resource (projects, files, folders, profile, workspaces) |
+| `write` | Create, update, and permanently delete catalogued resources, including removing teammates from workspaces |
+| `invite` | Manage project invitations and sharing on your behalf, including accepting or declining invitations |
+| `render` | Trigger render jobs on your behalf (separate scope because it consumes paid compute) |
+
+Two things worth knowing before you click Allow:
+
+- **`write` includes permanent deletion** and removing teammates from workspaces. That wording is deliberate.
+- **`render` currently enables nothing in connectors** — it covers REST endpoints only, and no render tools are exposed on the MCP surface yet.
+
+### What tools appear
+
+On Claude surfaces, the connector exposes tools grouped by scope — for example `project_list`, `project_browse`, `folder_browse`, `file_search`, `file_read_content`, and `comment_list` (read); `project_create`, `folder_create`, `file_update`, `file_create` (Markdown file creation), and `comment_create` (write); `project_share` and the `invite_*` tools (invite). Plus `getting_started`, a read-only orientation guide, and `destination_suggest`, which ranks likely save destinations. Many responses include `webUrl` links straight into the Continuity web app.
+
+The exact tool list depends on your client and may grow as new skills ship — ChatGPT sees only `search`, `fetch`, and `getting_started`.
+
+### Good first prompts (Claude surfaces)
+
+These prompts assume the full tool set on Claude surfaces; for ChatGPT, use the prompts in the [ChatGPT section](#chatgpt). Start read-only, then work up:
+
+- *"How do I use Continuity?"* — runs the `getting_started` tool for a guided walkthrough
+- *"List my Continuity projects"* — `project_list`, the recommended first success
+- *"Show me what's in [project]"* — `project_browse`
+- *"Create a project called [name]"* — `project_create`
+- *"Share this project with [email]"* — `project_share`
+- *"Leave a comment on [file]"* — `comment_create`
+
+A successful first call looks like this (illustrative — your project names and links will differ):
+
+> **You:** List my Continuity projects
+>
+> **Agent:** You have three projects:
+> 1. **Spring Lookbook** — [open in Continuity](https://folio.stagecontinuity.com/projects/1024)
+> 2. **Product Renders** — [open in Continuity](https://folio.stagecontinuity.com/projects/1057)
+> 3. **Archive 2025** — [open in Continuity](https://folio.stagecontinuity.com/projects/1112)
+
+### Revoking access
+
+- **Continuity side (connector):** open [folio.stagecontinuity.com/account/connections](https://folio.stagecontinuity.com/account/connections), find the connected app, and click **Revoke**. Access is cut within seconds. Tokens are scoped per app, so revoking one connector doesn't affect others. Reconnecting later shows the consent screen again and issues a fresh token.
+- **Client side (connector):** also remove the connector in your client — on claude.ai under **Customize > Connectors**, in ChatGPT under **Settings > Connectors**.
+- **API keys:** manage and revoke keys at [folio.stagecontinuity.com/api-keys](https://folio.stagecontinuity.com/api-keys), or via `DELETE https://data.stagecontinuity.com/api/v1/api-keys/{key_id}` (JWT Bearer required).
+
+## Using API keys
+
+### Base URLs
+
+| Host | Serves |
+| --- | --- |
+| `https://folio.stagecontinuity.com/api` | Auth endpoints only: `/auth/token`, `/auth/token/refresh`, `/auth/token/exchange` |
+| `https://data.stagecontinuity.com/api` | All V1 data APIs: `/v1/projects`, `/v1/files`, `/v1/api-keys`, … |
+
+### Getting a key
+
+Full details live in the [authentication skill](https://github.com/StageContinuity/ContinuitySkills/blob/main/authentication/SKILL.md) (in-repo: `./authentication/SKILL.md`). Three options:
+
+- **Option A (easiest):** create a key in the web UI at [folio.stagecontinuity.com/api-keys](https://folio.stagecontinuity.com/api-keys), save it immediately (shown only once), then set the `CONTINUITY_API_KEY` environment variable as described in [Before you start](#connect-your-ai-tool-to-continuity).
+- **Option B (agent-driven):** the agent exchanges your email/password at `POST https://folio.stagecontinuity.com/api/auth/token` for a 1-hour JWT, then mints a key with `POST https://data.stagecontinuity.com/api/v1/api-keys` using `Authorization: Bearer <access_token>`.
+- **Option C (browser SSO — no password shared with the agent):** the agent starts a local callback server on an ephemeral port (49152–65535), opens `https://folio.stagecontinuity.com/auth/signin?source=api&port=<port>`, receives a single-use exchange code (valid 60 seconds) at `http://localhost:<port>/callback`, trades it via `POST https://folio.stagecontinuity.com/api/auth/token/exchange`, then creates the key as in Option B.
+
+> **Caution — Option B shares your password.** Only run Option B with a **local agent you control and trust**; it sends your Continuity email and password to whatever agent executes it. Never enter your Continuity password into a hosted or third-party chat client (ChatGPT, Claude on the web, etc.), where it would be transmitted to that provider. When in doubt, prefer **Option C** (browser SSO — your password never reaches the agent) or **Option A** (create the key yourself in the web UI).
+
+### Two headers, two credentials
+
+Every V1 data endpoint accepts either:
+
+| Header | Credential | Lifetime |
+| --- | --- | --- |
+| `X-API-Key: <key>` | API key | Long-lived — no expiry unless `expiresAt` was set; no refresh needed |
+| `Authorization: Bearer <jwt>` | JWT access token | 1 hour; refresh proactively at ~55 minutes via `/auth/token/refresh` (refresh tokens live 30 days) |
+
+If both headers are sent, the JWT wins. Refresh tokens are single-use — always store the newest one; reusing an old one returns 401, and a failed refresh means logging in again.
+
+**One asymmetry to remember:** an API key can read and write data, but it cannot manage API keys. Creating (`POST /v1/api-keys`), listing (`GET /v1/api-keys`), and revoking (`DELETE /v1/api-keys/{key_id}`) all require a JWT Bearer.
+
+### Key custody
+
+- The key is shown **once**, at creation. Save it immediately.
+- Keep it in an environment variable (`CONTINUITY_API_KEY`) — never paste it into a chat conversation, prompt, or log.
+- If a key **is** ever pasted into a chat, treat it as exposed: create a new key, update every place the old one is stored, then revoke the old one. Places to check: your shell environment or profile, client/environment secrets (e.g. a Codex environment secret), Hermes's `.env` file (`~/.hermes/.env`; Windows: `%LOCALAPPDATA%\hermes\.env`), and on Windows the persisted User-scope variable — it lives in the registry (`HKCU\Environment`) and survives until you remove or replace it: `[Environment]::SetEnvironmentVariable("CONTINUITY_API_KEY", $null, "User")` deletes it.
+- Keys are user-scoped and grant the full V1 surface for your user, optionally restricted to specific organizations at creation time.
+- Revoke a key you no longer need at [folio.stagecontinuity.com/api-keys](https://folio.stagecontinuity.com/api-keys) or with `DELETE /v1/api-keys/{key_id}` (JWT Bearer required).
+
+### First request
+
+```bash
+curl -H "X-API-Key: $CONTINUITY_API_KEY" https://data.stagecontinuity.com/api/v1/projects
+```
+
+If your projects come back as JSON, you're connected.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `401 invalid_token` on a connector call | The token expired or was revoked | Reconnect from your client's connector UI (e.g. ChatGPT: **Settings > Connectors > Continuity > Reconnect**) |
+| `403 insufficient_scope` | The token lacks a required scope | Revoke at [folio.stagecontinuity.com/account/connections](https://folio.stagecontinuity.com/account/connections), then reconnect to re-consent to the full scope set |
+| Continuity missing from `/mcp` in Claude Code | Session isn't authenticated with a claude.ai subscription login | Run `/status`; connectors don't load when `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `apiKeyHelper`, Bedrock/Vertex, or a setup token is active |
+| *"does not support dynamic client registration"* when direct-adding in Claude Code | Continuity's OAuth server has no dynamic client registration | Add Continuity on claude.ai instead ([claude.ai/customize/connectors](https://claude.ai/customize/connectors)) and let it flow into Claude Code |
+| No way to add a connector in ChatGPT Settings | Free tier (custom connectors need a paid plan), or Developer mode isn't enabled | Upgrade to a paid plan (Plus, Pro, Business/Team, Enterprise, Edu), then enable **Settings > Connectors > Advanced > Developer mode** (naming varies as ChatGPT evolves) |
+| Unknown-tool error in ChatGPT for `project_list` etc. | ChatGPT's Continuity surface has only `search`, `fetch`, and `getting_started` | Use those three tools; the full tool set is available on Claude surfaces |
+| Connector doesn't appear in an existing conversation | Connectors are picked up at session start | Start a new chat — existing chats won't see the connector |
+| `401` when refreshing a JWT | Refresh tokens are single-use; an old one was reused, or the 30-day refresh token expired | Log in again and store the newest `refresh_token` after every refresh |
+| `POST /v1/api-keys` rejected when sent with `X-API-Key` | Key management requires a JWT Bearer, not an API key | Get a JWT via `/auth/token` (or the SSO flow) first |
+| Repeated auth failures | Auth endpoints are rate-limited and repeated failed logins temporarily lock the account | Wait a few minutes and retry; slow down automated login attempts |
+| Truncated results on large listings in Claude Code | MCP tool output is capped at 25,000 tokens by default | Raise the cap with the `MAX_MCP_OUTPUT_TOKENS` environment variable, or narrow the request |
+| Skills installed, but the agent doesn't see them | The install didn't target your client — Claude Code reads `.claude/skills/`, which is only created when you select **Claude Code** in the installer's agent picker — or the agent was launched in a different folder than the install (project-level installs are only visible from that folder, for every client) | Re-run `npx skills add …` and select your client in the picker; launch the agent in the folder you installed into |
+| Hermes: the key works in the CLI, but the desktop app says no key is set | The desktop agent doesn't inherit shell exports or Windows User-scope variables | Put the key in Hermes's `.env` file (`~/.hermes/.env`, Windows: `%LOCALAPPDATA%\hermes\.env`), quit the desktop app including the tray icon, relaunch |
+| Hermes MCP server entry fails with *"Invalid registration response"* | Continuity's OAuth server has no dynamic client registration | Remove the server entry and use the skills + API key path |
+| `401 {"detail": "Invalid API key"}` on a V1 call | The key reached the API but doesn't exist or was revoked (a rotated-out key in a stale environment is the classic cause) | Create a new key at [folio.stagecontinuity.com/api-keys](https://folio.stagecontinuity.com/api-keys), update it everywhere it's stored, and restart the client |
+| `401 "Authentication required…"` on a V1 call | No credential was sent at all — `CONTINUITY_API_KEY` isn't visible to the client's process | Set the variable and **fully restart** the client (environment variables are read at process start) |
+
+Still stuck? On a connector surface, ask *"How do I use Continuity?"* (runs the `getting_started` tool); on the skills path, ask *"How do I use Continuity skills?"* (activates the getting-started skill). Both give a safe, read-only walkthrough that verifies your setup step by step.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Continuity Getting Started"
+  short_description: "Learn and start using Continuity skills"
+  default_prompt: "Use $getting-started to explain what Continuity can do and guide me through a safe first step."
