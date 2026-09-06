@@ -113,3 +113,9 @@ plugin manifest is missing or unreadable, the diagnostic assigns that cache
 root a stable `unknown-plugin-<hash>` namespace instead of assuming the skill
 is bare. Scan order is informational; the active client owns runtime
 precedence.
+
+## Continued plugins (release preparation)
+
+`plugins/catalog.json` declares seven first-party packages: GitHub monitoring, Work knowledge, Folio connection, Diff Viewer, Code Viewer, JSON & CSV Viewer, and Review Rules. Skills are packaged from this repository rather than maintained in duplicate. Run `python3 scripts/build-plugins.py --output /tmp/continued-plugins --tag plugins-v0.1.0` from a clean checkout to produce deterministic ZIPs and `catalog.json`.
+
+The plugin-packages workflow only uploads build artifacts for review. It has read-only repository permissions and does not publish a release. When a release is separately approved, attach the generated catalog and exact ZIPs together under the planned tag. Continued reads the latest release catalog and verifies archive size, SHA-256 and package identity before installation review. The catalog is trusted through the official GitHub repository over HTTPS; this is not an independent package-signing system. Local dirty builds require `--allow-dirty` and are marked as development builds.

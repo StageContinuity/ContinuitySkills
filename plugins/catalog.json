@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "plugins": [
+    {
+      "id": "continued-automation",
+      "name": "GitHub review & issue monitoring",
+      "feature": "automation",
+      "version": "0.1.0",
+      "templates": [
+        {
+          "name": "GitHub monitoring",
+          "kind": "automation",
+          "path": "templates/github-monitoring.md"
+        }
+      ]
+    },
+    {
+      "id": "continued-knowledge",
+      "name": "Work knowledge",
+      "feature": "knowledge",
+      "version": "0.1.0",
+      "templates": [
+        {
+          "name": "Work knowledge",
+          "kind": "knowledge",
+          "path": "templates/work-knowledge.md"
+        }
+      ]
+    },
+    {
+      "id": "continued-folio",
+      "name": "Folio connection",
+      "feature": "folio-connection",
+      "version": "0.1.0",
+      "templates": []
+    },
+    {
+      "id": "continued-diff-viewer",
+      "name": "Diff Viewer",
+      "version": "0.1.0",
+      "description": "Read unified diffs and patches with file navigation and highlighted additions and deletions.",
+      "viewers": [
+        "viewers/diff"
+      ],
+      "templates": []
+    },
+    {
+      "id": "continued-code-viewer",
+      "name": "Code Viewer",
+      "version": "0.1.0",
+      "description": "Read CSS and JavaScript with lightweight syntax highlighting.",
+      "viewers": [
+        "viewers/code"
+      ],
+      "templates": []
+    },
+    {
+      "id": "continued-data-viewer",
+      "name": "JSON & CSV Viewer",
+      "version": "0.1.0",
+      "description": "Read formatted JSON and bounded CSV or TSV tables.",
+      "viewers": [
+        "viewers/data"
+      ],
+      "templates": []
+    },
+    {
+      "id": "continued-review-rules",
+      "name": "Review Rules",
+      "version": "0.1.0",
+      "description": "Create a review checklist in Session, tailored to your project.",
+      "viewers": [],
+      "templates": [
+        {
+          "name": "Review checklist",
+          "kind": "workRules",
+          "path": "templates/review-rules.md"
+        }
+      ]
+    }
+  ]
+}
