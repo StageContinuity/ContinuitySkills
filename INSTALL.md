@@ -1,5 +1,7 @@
 # Connect Your AI Tool to Continuity
 
+For Continued feature-specific installs (Automation, Knowledge, optional Folio connection), see [the feature installation guide](README.md#install-by-continued-feature). Local authoring does not require connecting a cloud account.
+
 There are two ways to hook an AI tool up to Continuity, and they suit different clients:
 
 - **Connector (OAuth MCP)** — paste a URL into your client, sign in through your browser, and approve access once; from then on your AI tool can work with your Continuity projects directly. (Behind the scenes: MCP is the standard protocol AI tools use to talk to services, and OAuth is the browser sign-in that authorizes it.) No keys to copy, revocable from your Continuity account at any time. Best for hosted and chat-style clients (claude.ai surfaces, ChatGPT). The server URL for Claude surfaces is `https://folio.stagecontinuity.com/mcp`; ChatGPT uses its own URL (see [ChatGPT](#chatgpt)).
