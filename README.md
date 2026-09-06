@@ -1,4 +1,4 @@
-# Continuity API Skills
+# Continuity Skills
 
 Continuity provides an agent-friendly cloud storage via a simple Project → Folder → File hierarchy. Agents authenticate with an API key, then create projects, organize folders, and upload/download files — all through REST APIs designed for programmatic access.
 
@@ -11,6 +11,30 @@ npx skills add https://github.com/StageContinuity/ContinuitySkills
 ```
 
 To update to the latest version, run the same command again.
+
+## Install by Continued feature
+
+You do not need every skill. [features.json](features.json) declares independent feature groups:
+
+| Feature | Skills | When to install |
+| --- | --- | --- |
+| `automation` | continued-automation | Let an agent produce tested Automation artifacts for Continued |
+| `knowledge` | knowledge-base | Curate local work knowledge and prepare Folio KB assets |
+| `folio-connection` | authentication, project-management | Optional: connect to Folio to publish/read cloud content |
+
+For a selective macOS/Linux install from a checkout (Python 3.9+):
+
+```bash
+git clone https://github.com/StageContinuity/ContinuitySkills.git
+cd ContinuitySkills
+python3 scripts/install-feature.py automation
+# Or: python3 scripts/install-feature.py knowledge
+# Optional cloud access: python3 scripts/install-feature.py folio-connection
+```
+
+The feature installer installs the selected group for both Codex and Claude, using the same immutable local copy. Use `--agents codex` or `--agents claude` for one client and `--dry-run` to inspect changes. It never replaces unrelated skills; name conflicts are reported before any links change. Re-running updates only this selected feature. It does not log in, upload a KB, enable an automation or restart an agent. The local installer is POSIX-only; the existing skills CLI remains available for other platforms/clients.
+
+Continued can offer these groups in Skills & MCP. App-bundled copies must record their source revision; this repository is canonical. Automation authoring currently requires the Continued build supporting schema v1, Python 3 and GitHub CLI for GitHub connectors. Local KB authoring does not need Continued or a cloud account.
 
 ## Getting Started
 
@@ -33,6 +57,8 @@ Connect Claude Code, Claude Code Web & Cowork, ChatGPT, Codex, or OpenClaw — v
 
 | Skill | Description |
 | --- | --- |
+| [Automation authoring](continued-automation/SKILL.md) | Create, validate, preview and register draft Automation artifacts |
+| [Knowledge Base](knowledge-base/SKILL.md) | Curate local work knowledge and publish/read versioned Folio KB assets |
 | [Getting Started](./getting-started/SKILL.md) | Learn what Continuity can do and complete a safe guided first run |
 | [Authentication](./authentication/SKILL.md) | Obtain JWT tokens, manage API keys |
 | [Project Management](./project-management/SKILL.md) | Create, list, update, delete, and share projects; browse contents |
@@ -87,3 +113,9 @@ plugin manifest is missing or unreadable, the diagnostic assigns that cache
 root a stable `unknown-plugin-<hash>` namespace instead of assuming the skill
 is bare. Scan order is informational; the active client owns runtime
 precedence.
+
+## Continued plugins (release preparation)
+
+`plugins/catalog.json` declares seven first-party packages: GitHub monitoring, Work knowledge, Folio connection, Diff Viewer, Code Viewer, JSON & CSV Viewer, and Review Rules. Skills are packaged from this repository rather than maintained in duplicate. Run `python3 scripts/build-plugins.py --output /tmp/continued-plugins --tag plugins-v0.1.0` from a clean checkout to produce deterministic ZIPs and `catalog.json`.
+
+The plugin-packages workflow only uploads build artifacts for review. It has read-only repository permissions and does not publish a release. When a release is separately approved, attach the generated catalog and exact ZIPs together under the planned tag. Continued reads the latest release catalog and verifies archive size, SHA-256 and package identity before installation review. The catalog is trusted through the official GitHub repository over HTTPS; this is not an independent package-signing system. Local dirty builds require `--allow-dirty` and are marked as development builds.

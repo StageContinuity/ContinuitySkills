@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "features": {
+    "automation": {
+      "name": "Continued Automations",
+      "skills": [
+        "continued-automation"
+      ],
+      "requires": [
+        "Continued with automation artifact support",
+        "Python 3",
+        "GitHub CLI for GitHub connectors"
+      ],
+      "description": "Author, test and register deterministic monitoring bundles. Installation does not enable schedules."
+    },
+    "knowledge": {
+      "name": "Work knowledge & Folio KB",
+      "skills": [
+        "knowledge-base"
+      ],
+      "requires": [],
+      "description": "Build local work knowledge. Install folio-connection separately when cloud access is needed."
+    },
+    "folio-connection": {
+      "name": "Folio cloud connection",
+      "skills": [
+        "authentication",
+        "project-management"
+      ],
+      "requires": [
+        "Continuity account for cloud calls"
+      ],
+      "description": "Optional cloud authentication and destination discovery. Installing does not log in or upload content."
+    }
+  }
+}

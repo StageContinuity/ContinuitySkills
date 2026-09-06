@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><style>
+body{margin:0;background:#1a1d23;color:#dce1e9;font:13px/1.65 ui-monospace,monospace}header{position:sticky;top:0;background:#20252d;padding:16px 22px;border-bottom:1px solid #384150;font:14px system-ui}h1{font-size:17px;margin:0 0 8px}main{padding:12px 0 40px}.line{white-space:pre-wrap;overflow-wrap:anywhere;padding:0 22px;min-height:1.65em}.added{background:#15382b;color:#b0e5c2}.removed{background:#42272b;color:#f0bec3}.hunk{background:#25334a;color:#b7d2ff;margin:12px 0 4px}.file{font-weight:bold;background:#2a303b;margin-top:18px;padding:12px 22px}select{background:#15181e;color:#dce1e9;border:1px solid #566174;padding:5px;max-width:70%}.note{color:#abb5c5;margin-left:12px}</style>
+<header><h1 id="name"></h1><select id="files" aria-label="Jump to changed file"></select><span class="note" id="stats"></span></header><main id="diff"></main>
+<script>
+addEventListener('message',e=>{
+ if(e.source!==parent||e.data?.type!=='continued:render')return;
+ const text=e.data.text,lines=text.split('\n'),body=document.getElementById('diff'),files=document.getElementById('files');body.replaceChildren();files.replaceChildren();document.getElementById('name').textContent=e.data.name;
+ let add=0,remove=0,sections=0;const nodes=[];
+ for(const line of lines.slice(0,12000)){
+  const row=document.createElement('div');row.className='line';row.textContent=line||' ';
+  if(line.startsWith('diff --git ')||line.startsWith('Index: ')){row.classList.add('file');const option=new Option(line.replace(/^diff --git |^Index: /,''),String(nodes.length));nodes.push(row);files.add(option);sections++;}
+  else if(line.startsWith('@@'))row.classList.add('hunk');
+  else if(line.startsWith('+')&&!line.startsWith('+++')){row.classList.add('added');add++;}
+  else if(line.startsWith('-')&&!line.startsWith('---')){row.classList.add('removed');remove++;}
+  body.append(row);
+ }
+ files.hidden=!sections;files.onchange=()=>nodes[Number(files.value)]?.scrollIntoView({block:'center'});
+ document.getElementById('stats').textContent=`+${add} / −${remove} · Read only`+(lines.length>12000?' · First 12,000 lines shown':'');
+});
+</script>
