@@ -192,9 +192,9 @@ holds. One does not cover the other. So, before you plan uploads or analysis:
    Disk Access as a first move. If they ask, point them to their own System
    Settings → Privacy & Security → Files and Folders and say it is their choice
    to make; do not walk them through it.
-5. **Say what the server cannot do**, once, if it comes up: "Folio's server
+5. **Say what the server cannot do**, once, if it comes up: "Continuity's server
    never sees files on this computer; it only receives bytes my tools send. If I
-   can't read a file, nothing on Folio's side can change that."
+   can't read a file, nothing on Continuity's side can change that."
 6. **Then continue.** Once a path reads, re-read only that path and resume the
    phase it belongs to — material to Phase 3, the reel to Phase 6, their own
    clip to Phase 6b. Someone else's reel remains inspiration: never

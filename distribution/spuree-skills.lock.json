@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/CheehooLabs/SpureeSkills.git",
+  "commit": "71dd4424e351344ce9d74c712f71c09c628ce551",
+  "skills": [
+    "authentication",
+    "file-comment",
+    "file-management",
+    "first-post",
+    "folder-management",
+    "getting-started",
+    "project-invitation",
+    "project-management",
+    "workspace-management"
+  ],
+  "files": [
+    { "from": "INSTALL.md", "to": "INSTALL.md" },
+    {
+      "from": "scripts/check-folder-discovery-contract.mjs",
+      "to": "scripts/check-folder-discovery-contract.mjs"
+    },
+    {
+      "from": "scripts/diagnose-spuree-skill-copies.mjs",
+      "to": "scripts/diagnose-continuity-skill-copies.mjs"
+    },
+    {
+      "from": "test/folder-discovery-contract.test.mjs",
+      "to": "test/folder-discovery-contract.test.mjs"
+    },
+    {
+      "from": "test/diagnose-spuree-skill-copies.test.mjs",
+      "to": "test/diagnose-continuity-skill-copies.test.mjs"
+    },
+    { "from": "test/workflow-pins.test.mjs", "to": "test/workflow-pins.test.mjs" }
+  ]
+}

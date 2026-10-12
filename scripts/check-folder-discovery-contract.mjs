@@ -16,6 +16,7 @@ export const SKILL_FILES = Object.freeze({
   gettingStarted: "getting-started/SKILL.md",
   projectInvitation: "project-invitation/SKILL.md",
   project: "project-management/SKILL.md",
+  workspace: "workspace-management/SKILL.md",
 });
 
 const CONTRACT_SKILLS = Object.freeze([
@@ -967,16 +968,16 @@ function validateProjectDiscoveryRecipe(projectMarkdown, errors) {
 
 function validateCanonicalUrls(documents, errors) {
   for (const [label, markdown] of Object.entries(documents)) {
-    addError(errors, !/https:\/\/folio\.stagecontinuity\.com\/file\//.test(markdown), `${label}: singular /file Studio URL is forbidden`);
+    addError(errors, !/https:\/\/folio\.stagecontinuity\.com\/file\//.test(markdown), `${label}: singular /file Folio URL is forbidden`);
     addError(
       errors,
       !/\/projects\/\{[^}]+\}\/folders\//.test(markdown),
-      `${label}: multi-segment project/folder Studio URL is forbidden`,
+      `${label}: multi-segment project/folder Folio URL is forbidden`,
     );
     addError(
       errors,
       !/(?:\.\.\.)?\/folders\/\{[^}]+\}\/\{[^}]+\}/.test(markdown),
-      `${label}: nested multi-ID folder Studio URL is forbidden`,
+      `${label}: nested multi-ID folder Folio URL is forbidden`,
     );
     addError(errors, !/(?:[?&]|\s)type=session(?:[&\s`"']|$)/.test(markdown), `${label}: executable type=session search is forbidden`);
   }

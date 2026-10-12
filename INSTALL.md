@@ -197,7 +197,7 @@ A successful first call looks like this (illustrative — your project names and
 
 Full details live in the [authentication skill](https://github.com/StageContinuity/ContinuitySkills/blob/main/authentication/SKILL.md) (in-repo: `./authentication/SKILL.md`). Three options:
 
-- **Option A (easiest):** create a key in the web UI at [folio.stagecontinuity.com/api-keys](https://folio.stagecontinuity.com/api-keys), save it immediately (shown only once), then set the `CONTINUITY_API_KEY` environment variable as described in [Before you start](#connect-your-ai-tool-to-continuity).
+- **Option A (easiest):** create a key in the web UI at [folio.stagecontinuity.com/api-keys](https://folio.stagecontinuity.com/api-keys), save it immediately (shown only once), then `export CONTINUITY_API_KEY="<your-api-key>"`.
 - **Option B (agent-driven):** the agent exchanges your email/password at `POST https://folio.stagecontinuity.com/api/auth/token` for a 1-hour JWT, then mints a key with `POST https://data.stagecontinuity.com/api/v1/api-keys` using `Authorization: Bearer <access_token>`.
 - **Option C (browser SSO — no password shared with the agent):** the agent starts a local callback server on an ephemeral port (49152–65535), opens `https://folio.stagecontinuity.com/auth/signin?source=api&port=<port>`, receives a single-use exchange code (valid 60 seconds) at `http://localhost:<port>/callback`, trades it via `POST https://folio.stagecontinuity.com/api/auth/token/exchange`, then creates the key as in Option B.
 

@@ -78,7 +78,7 @@ Entities represent assets and have one of these types:
 
 ### GET /v1/search/folders
 
-<!-- continuity-agent
+<!-- spuree-agent
 surfaces: ["local", "desktop", "backend", "hosted-web"]
 webSafe: true
 -->
@@ -182,7 +182,7 @@ stable qualitative tier, not a probability. `reasonCodes` may contain
 
 Evidence is count-only. CheehooData does not return matching child file names,
 file IDs, snippets, bodies, raw Atlas scores, or navigation URLs from this
-endpoint. A hosted Studio tool may add `webUrl` fields; otherwise construct
+endpoint. A hosted Folio tool may add `webUrl` fields; otherwise construct
 `https://folio.stagecontinuity.com/folders/{folderId}` and
 `https://folio.stagecontinuity.com/projects/{projectId}` from the canonical IDs.
 
@@ -220,7 +220,7 @@ curl "https://data.stagecontinuity.com/api/v1/search/folders?q=PLOCAN%20Phase%20
 
 ### GET /v1/folders
 
-<!-- continuity-agent
+<!-- spuree-agent
 surfaces: ["local", "desktop", "backend", "hosted-web"]
 webSafe: true
 -->
@@ -828,7 +828,7 @@ Do not list every project or walk child endpoints to discover a folder by name.
    Read the grouped `{ data, count, cursor }` response. Each direct folder
    result proves that its `sourceId` is a folder ID. Rank an exact
    case-insensitive `sessionName` match first, then normalized requested-label
-   matches, then the API relevance order. A folder result's canonical Studio
+   matches, then the API relevance order. A folder result's canonical Folio
    URL is `https://folio.stagecontinuity.com/folders/{sourceId}`. Treat a legacy
    `projectId` as an opaque identifier; do not invent a project name or folder
    path when canonical context is absent.
@@ -920,7 +920,7 @@ POST /v1/sessions { name: "Heroes", parentSessionId: "folder1" }
 3. **Get files** → for each asset, list its files
 4. **Download** → batch download with `POST /v1/sessions/files/download/urls`
 
-### Studio URLs
+### Folio URLs
 
 After creating or finding resources, you can give the user a clickable link to view them in the browser:
 
@@ -930,7 +930,7 @@ After creating or finding resources, you can give the user a clickable link to v
 | Folder | `https://folio.stagecontinuity.com/folders/{folderId}` |
 | File | `https://folio.stagecontinuity.com/files/{fileId}` |
 
-Studio resource URLs use only the target ID, regardless of folder depth.
+Folio resource URLs use only the target ID, regardless of folder depth.
 
 ## Error Handling
 
