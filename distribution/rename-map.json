@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "preserve": [
+    "spuree-agent"
+  ],
+  "replacements": [
+    {
+      "from": "https://github.com/CheehooLabs/SpureeSkills",
+      "to": "https://github.com/StageContinuity/ContinuitySkills",
+      "reason": "Install commands and links point at this repository"
+    },
+    {
+      "from": "CheehooLabs/SpureeSkills",
+      "to": "StageContinuity/ContinuitySkills",
+      "reason": "Bare repository slug"
+    },
+    {
+      "from": "studio\\.spuree\\.com",
+      "to": "folio\\.stagecontinuity\\.com",
+      "reason": "Regex-escaped web app host in the contract checker"
+    },
+    {
+      "from": "data\\.spuree\\.com",
+      "to": "data\\.stagecontinuity\\.com",
+      "reason": "Regex-escaped API host in the contract checker"
+    },
+    {
+      "from": "studio.spuree.com",
+      "to": "folio.stagecontinuity.com",
+      "reason": "Web app host"
+    },
+    {
+      "from": "data.spuree.com",
+      "to": "data.stagecontinuity.com",
+      "reason": "API host"
+    },
+    {
+      "from": "spuree.com",
+      "to": "stagecontinuity.com",
+      "reason": "Main site, after both subdomains"
+    },
+    {
+      "from": "Spuree Studio",
+      "to": "Folio",
+      "reason": "The web app's product name; must run before the bare words"
+    },
+    {
+      "from": "SPUREE_",
+      "to": "CONTINUITY_",
+      "reason": "Environment variable prefix"
+    },
+    {
+      "from": "SpureeSkills",
+      "to": "ContinuitySkills",
+      "reason": "Repository name"
+    },
+    {
+      "from": "Spuree",
+      "to": "Continuity",
+      "reason": "Brand name"
+    },
+    {
+      "from": "spuree",
+      "to": "continuity",
+      "reason": "Lowercase brand name (MCP server names, test fixture prefixes)"
+    },
+    {
+      "from": "Studio",
+      "to": "Folio",
+      "reason": "The web app; runs last so host rules are not disturbed"
+    }
+  ],
+  "residue": [
+    "spuree",
+    "Spuree",
+    "SPUREE",
+    "Studio",
+    "studio"
+  ]
+}

@@ -21,7 +21,7 @@ After installing or connecting Continuity, ask your agent:
 The **getting-started** skill explains the available public capabilities and
 offers a guided, read-only first step. You can also ask “What can Continuity do?” or
 “Walk me through Continuity.” The guide adapts to full skill/MCP clients and to
-read-only web connectors that expose search and fetch. Studio also publishes
+read-only web connectors that expose search and fetch. Folio also publishes
 the same guide as the `getting_started` MCP tool for Claude Code on the web and
 ChatGPT.
 
@@ -39,8 +39,9 @@ Connect Claude Code, Claude Code Web & Cowork, ChatGPT, Codex, or OpenClaw — v
 | [Project Management](./project-management/SKILL.md) | Create, list, update, delete, and share projects; browse contents |
 | [Folder Management](./folder-management/SKILL.md) | Find canonical folders in one bounded call, list recent folders, and create, update, delete, browse, or download folder content |
 | [File Management](./file-management/SKILL.md) | Get, create, upload, update, and delete files with checksum-verified uploads (includes name search) |
-| [File Comments](./file-comment/SKILL.md) | Add, list, resolve, update, and delete line-anchored review comments on files, with threaded replies and @mentions |
+| [File Comments](./file-comment/SKILL.md) | Add, list, resolve, update, and delete review comments on files — anchored to a line range, a video timecode, or a still — with drawings, threaded replies, and @mentions |
 | [Project Invitations](./project-invitation/SKILL.md) | Manage sharing invitations for non-workspace members |
+| [Workspace Management](./workspace-management/SKILL.md) | List a workspace's members, add a member with a role, change a role, remove a member |
 
 ## Authentication
 
@@ -52,6 +53,14 @@ All skills use the V1 API. Two authentication methods are supported:
 | API key | `X-API-Key: <key>` | Automation and long-lived access |
 
 See the [Authentication skill](./authentication/SKILL.md) for details on obtaining tokens and managing API keys.
+
+## Contributing
+
+Continuity is the new name of Spuree, and the skills above are generated from a
+pinned commit of the public [SpureeSkills](https://github.com/CheehooLabs/SpureeSkills)
+repository with the Continuity names substituted. Edit a skill there, then
+re-pin here. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the procedure, the
+checks to run, and what a pull request needs before it can merge.
 
 ## Contract checks and diagnostics
 

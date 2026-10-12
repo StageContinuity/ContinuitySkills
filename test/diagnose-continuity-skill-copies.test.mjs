@@ -27,6 +27,7 @@ test("covers every public Continuity skill", () => {
     "getting-started",
     "project-invitation",
     "project-management",
+    "workspace-management",
   ]);
 });
 

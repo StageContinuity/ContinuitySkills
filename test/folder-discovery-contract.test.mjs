@@ -557,7 +557,7 @@ test("rejects split children arrays and legacy fallback guidance", () => {
   assert(result.includes("project-management: children section must not document split top-level arrays"));
 });
 
-test("rejects legacy Studio URLs", () => {
+test("rejects legacy Folio URLs", () => {
   const result = validateFolderDiscoveryContract(
     changed("folder", (markdown) =>
       markdown.replace(
@@ -566,7 +566,7 @@ test("rejects legacy Studio URLs", () => {
       ),
     ),
   );
-  assert(result.includes("folder: multi-segment project/folder Studio URL is forbidden"));
+  assert(result.includes("folder: multi-segment project/folder Folio URL is forbidden"));
 });
 
 test("rejects a singular file URL in any distributed skill", () => {
@@ -578,7 +578,7 @@ test("rejects a singular file URL in any distributed skill", () => {
       ),
     ),
   );
-  assert(result.includes("fileComment: singular /file Studio URL is forbidden"));
+  assert(result.includes("fileComment: singular /file Folio URL is forbidden"));
 });
 
 test("rejects traversal in the bounded recipe", () => {

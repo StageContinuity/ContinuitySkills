@@ -47,16 +47,16 @@ and uses an opaque cursor for pagination.
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `q` | string | Yes | — | Search query (1–255 chars). Full-text token match. |
-| `type` | string | No | — | Filter by source type: `file` \| `folder` \| `project` \| `asset`. Deprecated `workspace` remains accepted for compatibility and returns an empty page because workspace rows are not indexed. Omit for all. |
+| `type` | string | No | — | Filter by source type: `file` \| `folder` \| `project` \| `asset`. Deprecated `workspace` remains accepted for compatibility and returns an empty result because workspace rows are not indexed. Omit for all. |
 | `searchIn` | string | No | `all` | Indexed rows to search: `name` \| `content` (body + annotation) \| `all`. |
 | `matchMode` | string | No | `any` | Term matching inside each indexed row: `any` \| `all` \| `phrase`. `any` matches at least one analyzed term, `all` requires every analyzed term, and `phrase` requires ordered adjacent terms. |
 | `format` | string | No | — | Comma-separated file formats, e.g. `txt,md`. Applies to `file` type only. |
 | `entityType` | string | No | — | Comma-separated entity types, e.g. `character,prop`. Applies to `asset` type only. |
-| `workspaceId` | string | No | — | Restrict to a single workspace (ObjectId). Must be one the caller is a member of, else empty page; malformed id → 422. |
-| `projectId` | string | No | — | Restrict to a single project (ObjectId). Must be one the caller can access, else empty page; malformed id → 422. |
+| `workspaceId` | string | No | — | Restrict to a single workspace (ObjectId). Must be one the caller is a member of, else empty result; malformed id → 422. |
+| `projectId` | string | No | — | Restrict to a single project (ObjectId). Must be one the caller can access, else empty result; malformed id → 422. |
 | `createdAfter` | string | No | — | ISO 8601 lower bound on source `createdAt`. **Timezone required** (`Z` or `±HH:MM`) — naive datetimes → 422. |
 | `createdBefore` | string | No | — | ISO 8601 upper bound. Timezone required. |
-| `limit` | integer | No | 50 | Page size (1–200). |
+| `limit` | integer | No | 50 | Result page size (1–200). |
 | `cursor` | string | No | — | Opaque pagination token from a previous response. Replay the original `q` and every corpus-shaping filter. Cursors are HMAC-signed `v1` envelopes that bind that corpus; an unsigned pre-v1 cursor returns 422. |
 | `sortBy` | string | No | `relevance` | Result ordering: `relevance` \| `createdAt`. |
 | `sortOrder` | string | No | `desc` | Direction for `sortBy=createdAt`: `asc` \| `desc`. Ignored for relevance, which is always descending. |
@@ -66,7 +66,7 @@ and uses an opaque cursor for pagination.
 
 Continue pagination whenever `cursor` is non-null, even when `count` is smaller
 than the requested `limit`; canonical validation can suppress stale hits and
-produce a short page that still has another page.
+produce a short result set that still has a next cursor.
 
 Each `data` item is one matched source object. Common fields:
 
@@ -135,6 +135,13 @@ Each entry in `matches[]`:
 | `charOffset` | integer? | Char offset of the chunk within the file (content rows) |
 | `lineStart` | integer? | Starting line number of the chunk (content rows) |
 
+PDF body hits may also carry a `page` field (integer, 1-based physical PDF page
+of the matched chunk). Present only on `rowKind: "body"` hits of PDF files;
+absent on name hits, non-PDF files, and PDF rows not yet reindexed. A chunk
+never spans a page. When present, open the file at that page
+(`/files/{id}#page=N` in Folio or a viewer); when absent, open the file without
+a page fragment.
+
 ```bash
 # Find files with any analyzed term from "hero"
 curl "https://data.stagecontinuity.com/api/v1/search?q=hero&type=file" \
@@ -144,13 +151,14 @@ curl "https://data.stagecontinuity.com/api/v1/search?q=hero&type=file" \
 curl "https://data.stagecontinuity.com/api/v1/search?q=quarterly%20report&type=file&searchIn=name&matchMode=phrase&projectId=...&format=txt,md&limit=50" \
   -H "Authorization: Bearer $CONTINUITY_ACCESS_TOKEN"
 
-# Next page: replay the original query and corpus-shaping parameters
+# Next result page: replay the original query and corpus-shaping parameters
 curl "https://data.stagecontinuity.com/api/v1/search?q=hero&type=file&cursor=<token>" \
   -H "Authorization: Bearer $CONTINUITY_ACCESS_TOKEN"
 ```
 
-Newly issued HMAC-signed `v1` cursors also bind the caller's current permission
-scope. Treat a cursor as opaque; do not edit or reuse it with a different query,
+Newly issued HMAC-signed `v1` cursors (result page, not a PDF page) also bind
+the caller's current permission scope. Treat a cursor as opaque; do not edit or
+reuse it with a different query,
 source type, filter set, or caller. A malformed, tampered, or mismatched bound
 cursor returns 422. If a previously valid cursor returns 422 after the caller's
 permission scope changes, discard it and restart from page one with the same
@@ -165,21 +173,41 @@ page one with the same query and filters.
 
 | Code | Description |
 | --- | --- |
-| 200 | One canonical search page returned. |
+| 200 | One canonical result page returned. |
 | 400 | `search_query_too_broad`: query would match at least the bounded threshold; refine the terms. |
 | 401 | Invalid or expired credential. |
 | 403 | OAuth credential lacks the `read` scope. |
 | 422 | Missing/invalid parameter, timezone-less date, malformed narrowing ID, malformed/tampered/mismatched cursor, or any unsigned pre-v1 cursor. |
 | 500 | Non-transient search or canonical-storage failure. |
-| 503 | `search_context_unavailable`: canonical validation could not safely advance a stale-only page. |
+| 503 | `search_context_unavailable`: canonical validation could not safely advance a stale-only result set. |
 
 ---
 
 ### GET /v1/files/{fileId}
 
-Get file metadata and presigned download URL.
+Get file metadata, a presigned download URL, and the file's search-index state.
 
-**Response:** `{ "data": { id, fileName, fileFormat, mimeType, size, workspaceId, sessionId, entitySessionId, downloadUrl, createdAt, updatedAt } }`
+**Response:** `{ "data": { id, fileName, fileFormat, mimeType, size, workspaceId, sessionId, entitySessionId, downloadUrl, createdAt, updatedAt, searchIndex } }`
+
+`searchIndex` is `{ state, reason, method, indexedVersion, attempt, failedAt }` (or `null` when the file has no `fileFormat`):
+
+| `state` | Meaning | What to do |
+| --- | --- | --- |
+| `processing` | The indexer reads this format and has not yet recorded a result for the file's current version. A scanned (image-only) PDF is OCR'd and can take ~10 s for a few pages, so `processing` on a PDF is normal for longer than on a text file. | Poll this endpoint (see [After upload](#after-upload-wait-until-the-file-is-searchable)). |
+| `ready` | Name and body are searchable as of `indexedVersion`. | Search. |
+| `not_indexable` | A property of the file stops its body being indexed; re-indexing will not change it. `reason` says which: `image_only` (scanned PDF, no text layer, in an environment without OCR), `encrypted`, `oversize` (over 32 MB), `unsupported_format` (images, video, 3D — only the name is searchable), `extract_error` (bytes do not match the format). | Do not wait. Surface `reason` to the user. |
+| `failed` | The last indexing attempt failed. When `attempt` and `failedAt` are set the failure was final (retries exhausted); otherwise a later retry may succeed. `reason` values specific to `failed`: `ocr_no_text` (OCR ran on a scanned PDF and read no text on any page — blank or illegible scan), `ocr_timeout` (OCR ran out of its time budget before finishing a single page). | Do not poll on a final failure; surface it. |
+
+Additional fields on the verdict:
+
+| Field | Type | Present when | Description |
+| --- | --- | --- | --- |
+| `method` | `"text"` \| `"ocr"` | `state` = `ready`, PDF only | How the body was read: `text` from the file's own text layer, `ocr` from a rasterised scan. Null for text formats. |
+| `indexedVersion` | string | `state` != `processing` | ISO-8601 `updatedAt` of the file version this verdict was reached on. |
+| `attempt` | integer | terminal `failed` only | Receive count at which retries were exhausted. |
+| `failedAt` | string | terminal `failed` only | ISO-8601 instant of the last attempt. |
+
+`unsupported_format` files report `not_indexable` on the first read, so a client never waits on a binary.
 
 ```bash
 curl "https://data.stagecontinuity.com/api/v1/files/{fileId}" \
@@ -190,7 +218,7 @@ curl "https://data.stagecontinuity.com/api/v1/files/{fileId}" \
 
 ### GET /v1/files/{fileId}/content
 
-<!-- continuity-agent
+<!-- spuree-agent
 surfaces: ["local", "desktop", "backend", "hosted-web"]
 webSafe: true
 -->
@@ -234,8 +262,9 @@ The caller **must** then upload to S3 **and** call `POST /v1/files/{fileId}/uplo
 | `fileSize` | integer | Yes | File size in bytes (accepts string for backward compat) |
 | `sessionId` | string | Yes | Target project or folder ObjectId |
 | `checksum` | string | No | CRC32 base64 (8 chars) for end-to-end verification. When provided, the presigned URL is signed with the checksum and S3 verifies the upload matches. |
+| `uploadHeaderProfile` | string | No | Signing profile for the presigned URL: `aws-sdk` (default; for AWS SDK clients, additionally signs `x-amz-sdk-checksum-algorithm`) or `direct` (for hand-rolled HTTP clients). The response echoes the profile and the exact `requiredHeaders` to send. |
 
-**Response (single mode):** `{ messageCode, fileId, mode: "single", uploadUrl, checksumBase64, contentType }`
+**Response (single mode):** `{ messageCode, fileId, mode: "single", uploadUrl, checksumBase64, contentType, uploadHeaderProfile, requiredHeaders }` — `requiredHeaders` is the exact header map to send with the PUT; echo it verbatim.
 
 **Response (multipart mode):** `{ messageCode, fileId, mode: "multipart", parts: [{partNumber, startByte, endByte, url}, ...], totalParts, expiresAt }`
 
@@ -243,13 +272,13 @@ The caller **must** then upload to S3 **and** call `POST /v1/files/{fileId}/uplo
 | --- | --- |
 | 200 | Record created, presigned URL(s) returned |
 | 404 | Session not found |
-| 409 | File already exists |
+| 409 | Two distinct conflicts — discriminate by `body.detail.code`: **present** ⇒ upload/checksum conflict (see **409 conflict codes** under `PUT /v1/files/{fileId}`; do NOT retry with a mutated name); **absent** ⇒ filename conflict (use a different name or target) |
 
 ```bash
 curl -X POST "https://data.stagecontinuity.com/api/v1/files" \
   -H "Authorization: Bearer $CONTINUITY_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"fileName":"hero_walk","fileFormat":"fbx","fileSize":5242880,"sessionId":"...","checksum":"AAAAAA=="}'
+  -d '{"fileName":"hero_walk","fileFormat":"fbx","fileSize":5242880,"sessionId":"...","checksum":"AAAAAA==","uploadHeaderProfile":"direct"}'
 ```
 
 ---
@@ -319,8 +348,9 @@ Prepare a content update with optimistic concurrency. Acquires an upload lock. L
 | `expectedChecksum` | string | Yes | CRC32 base64 of current content (for conflict detection) |
 | `newChecksum` | string | Yes | CRC32 base64 of new content to upload |
 | `fileSize` | integer | No | Size in bytes. If ≥ 100 MB, returns multipart mode. |
+| `uploadHeaderProfile` | string | No | Signing profile for the presigned URL: `aws-sdk` (default) or `direct` for hand-rolled HTTP clients — same semantics as on `POST /v1/files`. |
 
-**Response (single):** `{ messageCode, fileId, mode: "single", uploadUrl, checksumBase64, contentType }`
+**Response (single):** `{ messageCode, fileId, mode: "single", uploadUrl, checksumBase64, contentType, uploadHeaderProfile, requiredHeaders }` — echo `requiredHeaders` verbatim on the PUT.
 
 **Response (multipart):** `{ messageCode, fileId, mode: "multipart", parts: [{partNumber, startByte, endByte, url}, ...], totalParts, expiresAt }`
 
@@ -331,13 +361,51 @@ After receiving the response, upload to S3 then call `POST /v1/files/{fileId}/up
 | Code | Description |
 | --- | --- |
 | 200 | Lock acquired, presigned URL(s) returned |
-| 409 | Checksum mismatch or locked by another user |
+| 409 | Checksum mismatch or locked by another user — disambiguate by the body's `code` (see **409 conflict codes** below) |
+
+**409 conflict codes.** Upload-conflict bodies carry a machine-readable `code`
+on the endpoints listed below, so an agent can branch without guessing:
+
+- `UPLOAD_LOCK_CONFLICT` — another user holds the upload lock; `retryable: true`.
+  A retry hint (`retryAfterSeconds`, seconds until the lock expires) exists
+  **only on the resume endpoint** — `POST`/`PUT` lock conflicts carry no
+  timing hint. Policy: on `POST`/`PUT`, retry **once** after a short fixed
+  backoff (30–60 s); on resume, wait `retryAfterSeconds` only when short
+  (≲ 2 minutes). In every case, after one failed retry stop and surface the
+  lock to the user — never sleep toward the raw lock expiry (1 h single /
+  6 h multipart). `holder`/`acquiredAt` appear **only if the service operator
+  has explicitly enabled full disclosure mode**; treat them as absent, and if
+  they do appear, do not surface another user's identity or activity to your
+  user.
+- `CHECKSUM_CONFLICT` — your `expectedChecksum` no longer matches: someone
+  else changed the file after you read it. `retryable: false`, and **do not
+  auto-retry by refreshing the checksum**: re-sending your original bytes with
+  the new `expectedChecksum` silently overwrites the other user's change —
+  the exact lost update this guard exists to prevent. **Default handling:
+  stop and surface the conflict to the user** — for binary or large assets
+  (`fbx`, `png`, video…) there is nothing to merge, and
+  `GET /v1/files/{fileId}/content` returns 415/413 for them anyway. Only for
+  text-like files where your change can be mechanically re-derived: re-fetch
+  the content, re-apply your change on top of the updated content, recompute
+  both checksums, then PUT.
+
+**Where the `code` lives — pinned per endpoint:**
+
+| Endpoint | 409 body shape |
+| --- | --- |
+| `POST /v1/files`, `PUT /v1/files/{fileId}` — upload/checksum conflicts | code nested: `body.detail.code`, with `message` and `retryable` alongside (no `retryAfterSeconds` here) |
+| `GET /v1/files/{fileId}/upload` (resume) | code at top level: `body.code` (nullable), `retryAfterSeconds` alongside. **`code` null/absent ⇒ "not in pending status" — not retryable: do not wait, surface to the user** |
+| Filename conflicts (`POST /v1/files`, `PATCH /v1/files/{fileId}`) | **no code** — plain error body |
+
+`POST /v1/files` can return either of two 409s; the discriminator is the
+field itself: **`body.detail.code` present ⇒ upload/checksum conflict;
+absent ⇒ filename conflict** (use a different name or target).
 
 ```bash
 curl -X PUT "https://data.stagecontinuity.com/api/v1/files/{fileId}" \
   -H "Authorization: Bearer $CONTINUITY_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"expectedChecksum": "a1b2...","newChecksum": "f6e5..."}'
+  -d '{"expectedChecksum": "a1b2...","newChecksum": "f6e5...","uploadHeaderProfile":"direct"}'
 ```
 
 ---
@@ -359,7 +427,7 @@ Resume a multipart upload. Returns which parts are already in S3 and fresh presi
 | --- | --- |
 | 200 | Success |
 | 400 | No active multipart upload |
-| 409 | Not in pending status or locked by another user |
+| 409 | Two causes, discriminated by top-level `body.code`: `UPLOAD_LOCK_CONFLICT` (locked by another user — retryable, `retryAfterSeconds` alongside) or **`code` null/absent** (not in pending status — **not retryable**: do not wait, surface to the user) |
 
 ```bash
 curl "https://data.stagecontinuity.com/api/v1/files/{fileId}/upload" \
@@ -428,19 +496,41 @@ curl -X DELETE "https://data.stagecontinuity.com/api/v1/files/{fileId}" \
    CHECKSUM=$(python3 -c "import base64, zlib, sys; print(base64.b64encode(zlib.crc32(open('$FILE_PATH','rb').read()).to_bytes(4,'big')).decode())")
    ```
 
-2. **Create file record** — `sessionId` is the target project or folder:
+2. **Create file record** — `sessionId` is the target project or folder.
+   This flow is a hand-rolled HTTP client, so it requests the `direct`
+   profile to keep the header set minimal (optional — the correctness rule
+   is echoing the response's `requiredHeaders`; see the note below):
    ```
-   POST /v1/files { fileName, fileFormat, fileSize, sessionId, checksum }
-   → { fileId, mode: "single", uploadUrl, checksumBase64, contentType }
+   POST /v1/files { fileName, fileFormat, fileSize, sessionId, checksum,
+                    uploadHeaderProfile: "direct" }
+   → { fileId, mode: "single", uploadUrl, checksumBase64, contentType,
+       uploadHeaderProfile: "direct", requiredHeaders }
    ```
 
-3. **Upload binary to S3:**
+3. **Upload binary to S3 — send exactly the headers in `requiredHeaders`**
+   (for the `direct` profile they are the two shown):
    ```
    PUT {uploadUrl}
    Content-Type: {contentType}
    x-amz-checksum-crc32: {checksumBase64}
    Body: <file binary>
    ```
+
+   > **Signing profiles — one rule guarantees correctness: echo the
+   > response's `requiredHeaders` verbatim.** Each presigned URL is signed
+   > for ONE exact header set, and `requiredHeaders` IS that set — sending
+   > more or fewer signed headers produces `SignatureDoesNotMatch` (the
+   > exact mismatch that broke an independently-built partner client in the
+   > field). Echoing works from any HTTP client under either profile.
+   >
+   > The `uploadHeaderProfile` request field (`"aws-sdk"` default /
+   > `"direct"`) only chooses **which** set your URL is signed for:
+   > `aws-sdk` additionally signs `x-amz-sdk-checksum-algorithm: CRC32`
+   > (AWS SDK clients inject it automatically), `direct` signs just the two
+   > headers above. Requesting `direct` from a hand-rolled client is a
+   > convenience — it keeps `requiredHeaders` down to the two headers you
+   > were sending anyway — not a correctness requirement. Multipart
+   > **part** PUTs are unaffected — part URLs sign no checksum headers.
 
 4. **Complete the upload — REQUIRED (file is not visible until this is called):**
    ```
@@ -475,6 +565,55 @@ curl -X DELETE "https://data.stagecontinuity.com/api/v1/files/{fileId}" \
 
 6. **To abort**, call `DELETE /v1/files/{fileId}/upload` to clean up S3 parts.
 
+### After upload: wait until the file is searchable
+
+Indexing is asynchronous. A file that `upload/complete` has just accepted is
+not in `GET /v1/search` results yet, and a `PUT` content update takes the file
+out of `ready` until its new bytes are indexed. Do not search and retry blindly;
+read the state:
+
+1. `GET /v1/files/{fileId}` and look at `data.searchIndex.state`.
+2. `processing` → wait and read again. Back off 1 s, 2 s, 4 s, … capped at 30 s
+   between reads. Give up after 5 minutes and report to the user that indexing
+   has not completed, rather than looping.
+3. `ready` → `GET /v1/search` will find the file's name and body.
+4. `not_indexable` or `failed` → stop. Waiting will not change it. Tell the user
+   the `reason` (a scanned PDF has no text to index; an encrypted PDF cannot be
+   read; an image or video has only its name indexed). `failed` is terminal by
+   construction: the indexer writes it only on a message's last allowed
+   receive, after every retry is spent; a retryable failure writes no verdict
+   at all and the file keeps reading `processing`, so keep polling on that.
+5. A request that fails in transport (network error, 5xx, unparseable body) is
+   not a state. Treat it like `processing`: wait the same backoff and read
+   again, and give up at the same 5-minute mark.
+
+```bash
+# Poll until ready, stop on a terminal state, give up after 5 minutes
+deadline=$(( $(date +%s) + 300 )); delay=1
+while :; do
+  # A transport failure or an unparseable body leaves state empty, which the
+  # case below treats like processing: same backoff, same 5-minute give-up.
+  state=$(curl -sf --max-time 20 "https://data.stagecontinuity.com/api/v1/files/$FILE_ID" \
+    -H "Authorization: Bearer $CONTINUITY_ACCESS_TOKEN" 2>/dev/null \
+    | python3 -c 'import json,sys; print((json.load(sys.stdin)["data"]["searchIndex"] or {}).get("state") or "")' 2>/dev/null)
+  case "$state" in
+    ready) echo "searchable"; break ;;
+    not_indexable|failed) echo "content not searchable: $state"; break ;;
+  esac
+  if [ "$(date +%s)" -ge "$deadline" ]; then
+    echo "indexing has not completed after 5 minutes (last state: $state); report this to the user instead of waiting longer"
+    break
+  fi
+  sleep $delay; delay=$(( delay * 2 > 30 ? 30 : delay * 2 ))
+done
+```
+
+The bound is elapsed time, not iteration count: with the 30 s cap a fixed
+iteration count would wait far longer than the rule above says.
+
+Typical upload-to-`ready` latency is under a second; a burst of many uploads
+queues behind one another and can take longer.
+
 ### Content Update Flow
 
 1. `PUT /v1/files/{fileId}` with checksums (and `fileSize` for multipart) → get upload URL(s)
@@ -485,24 +624,24 @@ curl -X DELETE "https://data.stagecontinuity.com/api/v1/files/{fileId}" \
 
 When a user wants to **view**, **preview**, or **see** a file:
 
-1. If the agent has browser tools (e.g., Chrome DevTools MCP), **open the Studio preview URL directly**:
+1. If the agent has browser tools (e.g., Chrome DevTools MCP), **open the Folio preview URL directly**:
    ```
    navigate_page → https://folio.stagecontinuity.com/files/{fileId}
    ```
 
-2. Otherwise, **return the Studio preview URL** for the user to click:
+2. Otherwise, **return the Folio preview URL** for the user to click:
    ```
    https://folio.stagecontinuity.com/files/{fileId}
    ```
 
-Do **not** download the file or attempt to open it locally. The Studio URL is permanent, permission-aware, and renders images, video, 3D, and other supported formats inline in the browser.
+Do **not** download the file or attempt to open it locally. The Folio URL is permanent, permission-aware, and renders images, video, 3D, and other supported formats inline in the browser.
 
 | Use case | URL | Properties |
 | --- | --- | --- |
 | **Share with user / preview** | `https://folio.stagecontinuity.com/files/{fileId}` | Permanent, permission-aware, renders preview UI |
 | **Programmatic download** | `downloadUrl` from `GET /v1/files/{fileId}` | Short-lived presigned S3 URL — do not share, bypasses permissions and expires |
 
-**Rule of thumb:** after `POST /v1/files` (upload) build the Studio URL from the returned `fileId`; after `GET /v1/search` use the result's `sourceId` (the file id, for `sourceType: "file"` items). Return that URL to the user. Only fetch `downloadUrl` when the agent itself needs the bytes.
+**Rule of thumb:** after `POST /v1/files` (upload) build the Folio URL from the returned `fileId`; after `GET /v1/search` use the result's `sourceId` (the file id, for `sourceType: "file"` items). Return that URL to the user. Only fetch `downloadUrl` when the agent itself needs the bytes.
 
 ### Search Then Download
 
@@ -516,7 +655,7 @@ Do **not** download the file or attempt to open it locally. The Studio URL is pe
 
 S3 key: `works_{workspaceId}/sess_{sessionId}/file_{fileId}`
 
-### Studio URLs
+### Folio URLs
 
 | Resource | URL Pattern |
 | --- | --- |
@@ -531,7 +670,7 @@ S3 key: `works_{workspaceId}/sess_{sessionId}/file_{fileId}`
 | 400 | Invalid checksum format, missing fields, bad ID | Fix input format |
 | 403 | No workspace access or edit permission | Check permissions |
 | 404 | File or session not found | Verify IDs |
-| 409 (checksum mismatch) | File modified by another user | Re-fetch checksum, retry |
-| 409 (upload lock) | Another user is uploading | Wait (lock expires in 1 hour for single, 6 hours for multipart) |
+| 409 (`code: CHECKSUM_CONFLICT`) | File changed since you read it | Default: surface the conflict to the user. Text-like files only: re-fetch content, re-apply your change on top, recompute checksums, retry. **Never** re-send original bytes with a refreshed checksum (silent lost update) |
+| 409 (`code: UPLOAD_LOCK_CONFLICT`) | Another user is uploading | POST/PUT: retry once after 30–60 s (no timing hint in the body). Resume: wait `retryAfterSeconds` when short (≲ 2 min). Then surface to the user — never sleep toward the 1 h / 6 h expiry |
 | 409 (filename conflict) | Same name exists in target | Use different name or target |
 | 401 | Invalid or expired token | Refresh via **authentication** skill |

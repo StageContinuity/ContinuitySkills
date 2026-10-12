@@ -18,5 +18,7 @@ jobs:
           node-version: 22.23.2
       - name: Test scripts
         run: node --test test/*.test.mjs
+      - name: Verify the shared skills match the pinned SpureeSkills commit
+        run: node scripts/materialize-spuree-skills.mjs --check
       - name: Check folder-discovery contract
         run: node scripts/check-folder-discovery-contract.mjs
