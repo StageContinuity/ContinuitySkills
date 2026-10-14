@@ -79,8 +79,9 @@ the material and the reel reach the server, and nothing else.
   MCP-only and works there: run the intake (Phase 0), the project (Phase 1) and
   the brand (Phase 2) as written. In the Phase 0 message, ask for the reel as a
   file attached to the chat, not a link — or, when `video_pattern_read` is in
-  your tool list, say they can upload it to the campaign project in Folio once
-  it exists (Phase 6). Before Phase 3, tell the person once that uploads from
+  your tool list, say they can upload the video file to the campaign project in
+  Folio once it exists, with Upload files — not Add link, which saves only the
+  URL (Phase 6). Before Phase 3, tell the person once that uploads from
   here may be blocked, and that their progress is kept if they are.
 
 Nothing about credits, quotes or approvals changes with where you run.
@@ -222,10 +223,10 @@ You need a **workspace id** for the brand and a **project** for the video.
 
 **With a website.** `brand_lookup` with the workspace and website first. If it
 exists, reuse its `kbEntityId` and skip to Phase 3 — tell the person their brand
-already exists and open its `webUrl`. Otherwise `brand_create` with the
-workspace, the name, the website and any social links. A 409 `brand_exists`
-carries the holder's `kbEntityId` in `details`: use that brand rather than
-creating another.
+already exists and open its `webUrl`, pasted from the result. Otherwise
+`brand_create` with the workspace, the name, the website and any social links.
+A 409 `brand_exists` carries the holder's `kbEntityId` in `details`: use that
+brand rather than creating another.
 
 **Without a website** (a personal brand, or a business with no site). A brand
 without a website has no identity key, so `brand_lookup` cannot find it and a
@@ -234,10 +235,12 @@ second create is not refused. Search by name instead — `file_search` with
 
 - 0 hits → `brand_create` with the workspace and the name, no website. Always
   pass the name: a personal brand is named by the person, never "Untitled brand".
-- 1 hit whose name matches exactly → "You already have a brand called X (link).
-  Use it?" On yes, reuse its `kbEntityId`.
-- 2 or more hits, or a near match → list name · id · link for each and ask which
-  one, or "new". Never pick silently.
+- 1 hit whose name matches exactly → "You already have a brand called X
+  (`<its webUrl, pasted from the hit>`). Use it?" On yes, reuse its
+  `kbEntityId`.
+- 2 or more hits, or a near match → list name · id · `webUrl` for each (id and
+  `webUrl` pasted from the hit) and ask which one, or "new". Never pick
+  silently.
 
 `brand_create` is the FREE shell; it never builds. Keep the `kbEntityId` and save
 it (**What you save**). The search index trails writes by a few seconds,
@@ -332,19 +335,32 @@ not here, unless they also want it in the brand's memory.
 Upload **everything** before the build. The build reads what is there when it
 runs, and a rebuild costs full price again.
 
+If you mention an uploaded file, give the `webUrl` from its result, pasted as
+is, or point at the brand page (`<brand webUrl>`); never type a file id.
+
 ## Phase 4 — The quote
 
-Nothing paid has happened yet. This is where the person learns what the rest
-will cost — once, before the first paid step.
+Nothing paid has happened yet. **Do Phase 6/6b's reference inspection, upload
+and mode selection now, then return here.** That analysis uses the intake and
+does not require built brand memory. At this pre-build pass, prepare the clip
+and plan only; generation and draft attachment wait until after Phase 5.
+Include the actual intended references in this budget quote so its cost includes
+video-reference processing. Use a provisional prompt from the intake and
+reference plan; Phase 7 writes the final prompt from the built brand memory,
+quotes it again, and obtains a separate generation approval.
 
 1. With the material in place, call `video_quote` with `brandId` = the brand's
    `kbEntityId`, `folderId` = the campaign project, the planned video at the
    preset (`ratio: "9:16"`, `resolution: "720p"`, `duration: 15`, no model) and a
-   one-line prompt for it. Show the person `workflow.steps` (the brand build —
+   provisional prompt and the selected references. Show the person `workflow.steps` (the brand build —
    an estimate until it runs —, the video, the draft at 0),
    `workflow.totalCredits`, `balance.availableCredits` and
    `workflow.expectedRemainingCredits`, in their words.
-2. Proceed only on an explicit yes to that quote. If `workflow.fits` is false,
+2. Show the quote as the price review for Phase 5; one explicit yes to the
+   named brand build and its price covers that step. Before that yes, say that
+   the first brand-memory build publishes live automatically when it completes;
+   this is not publication of the social post. The yes approves the build only,
+   not the provisional video. If `workflow.fits` is false,
    say the gap first (`workflow.totalCredits` minus `workflow.availableCredits`),
    then offer `recommended` or another entry of `alternatives` — a shorter or
    lower-resolution video, never a change to the brand content — and quote again
@@ -368,8 +384,11 @@ will cost — once, before the first paid step.
 1. Name the step and its cost — the build's line from `video_quote`, or the
    Phase 4 estimate when that tool is unavailable — say that a first build goes live by
    itself when it completes, and ask for an explicit yes. Do not proceed on
-   silence, or on an earlier yes to something else (the yes to the quote is not
-   the yes to the build).
+   silence or a yes to something else. If the person already explicitly
+   approved this named build and unchanged quoted price in Phase 4 **after
+   the automatic live-publication disclosure**, proceed with that approval
+   rather than asking the same question again. If that disclosure was missing,
+   state it and obtain approval before starting the build.
 2. After the yes, call `first_post_approve` with `step: "brand_build"`, the
    `kbEntityId`, and the quote: the build's credits from `video_quote`'s
    `workflow.steps` with `source: "quote"` (or the Phase 4 estimate with
@@ -381,7 +400,7 @@ will cost — once, before the first paid step.
 3. Poll `brand_build_status` every 5–10 seconds. Report progress in the person's
    words ("reading your website", "writing the brand profile"), not node names.
 4. **A first build publishes live by itself.** When status is `completed`, the
-   brand memory is live; share the brand's `webUrl`.
+   brand memory is live; share the brand's `webUrl`, pasted from the result.
 5. Only a **rebuild** stages a draft. If the build status says a version is
    awaiting confirmation: `brand_pending_read`, show the person what it holds
    (version, article count, the infobox cards), and only after they agree call
@@ -401,26 +420,35 @@ is Phase 6b; it may also be read the way a reel is.
 
 1. **Prefer `video_pattern_read` when it is in your tool list.** The server
    reads the reel's structure for you, free, and you need no `yt-dlp` or
-   `ffmpeg`: the person uploads the reel to the campaign project as a plain
-   file (never material) — in Folio, or you do it with `file_upload_start` /
+   `ffmpeg`: the person uploads the reel's video file (the MP4) to the campaign
+   project as a plain file (never material) with Upload files — a saved link
+   (Add link) holds only the URL, and `video_pattern_read` answers that it is a
+   link, not a video — in Folio, or you do it with `file_upload_start` /
    `file_upload_complete`, `sessionId` = the project, no `kbMaterial` —, you
    find its `fileId` (`folder_list_files` on the project, or `file_search`),
-   and call `video_pattern_read` with that `fileId`. It answers `ready` with
+   and call `video_pattern_read` with that `fileId` and `referenceKind: "reel"`
+   when the tool exposes it. It answers `ready` with
    the pattern (the hook, the beats with their seconds, camera behaviour,
    on-screen text, tone), `analysing` (wait 10 seconds and call again, for up
    to about two minutes), or `failed` (fall back to the local read, steps 2–5).
    In a cloud sandbox (**Where you are running**) this is the path — the reel's
-   site is usually blocked there — so say so once and give the project's web
-   URL for the upload; without the tool, use the file the person attached in
-   Phase 0.
+   site is usually blocked there — so say so once and give the project's
+   `webUrl` for the upload, pasted from `project_create`'s result (or from
+   `project_list` if you no longer have it); without the tool, use the file
+   the person attached in Phase 0.
 2. **Otherwise get the file locally.** In a cloud sandbox, do not try `yt-dlp`
    — the reel's site is usually blocked there too: use the file the person
    attached in Phase 0, or ask for it now. Otherwise, for a link, try
    `yt-dlp -o reference.mp4 "<url>"`
-   if `yt-dlp` is installed; Instagram often refuses anonymous downloads, so if
-   that fails, ask the person to save the video and give you the path, or to pick
-   one of their own posts instead (their own content is the most reliable
-   reference). Do not try to bypass a login wall. A path they give you goes
+   if `yt-dlp` is installed. Instagram often refuses anonymous downloads. **If any
+   download fails** — `yt-dlp`, the browser, `curl` or a fetch — stop at once and
+   do not try another route. Say in one message: "I couldn't download that Reel.
+   Save the MP4 on your device and upload it to <campaign project link> with
+   Upload files (not Add link), then tell me when it's there." — the link pasted
+   from `project_create`'s `webUrl`. Then read it with step 1, or through the
+   **file-management** skill when `video_pattern_read` is not in your tool list.
+   One of their own posts is an equally good reference (their own content is the
+   most reliable). Do not try to bypass a login wall. A path they give you goes
    through the **Local files** check before `ffprobe`.
 3. **Read its shape** with `ffprobe` (duration, aspect) and a scene-cut pass
    (`ffmpeg -i reference.mp4 -vf "select='gt(scene,0.3)',showinfo" -f null -`)
@@ -441,6 +469,49 @@ is Phase 6b; it may also be read the way a reel is.
    put the original's subject on screen. If the person wants it kept, it stays
    in the campaign project as a plain file (no `kbMaterial`); otherwise offer to
    delete it there, and your working copy, at the end.
+
+### Agree on reference use and the action to preserve
+
+Before the video quote, name the selected mode in plain language: **direct
+video reference**, **structure only**, or **no reference**. A finished clip
+skips generation. Direct mode requires eligible footage the person owns under
+the current connector rules; a third-party reel stays structure only. Never
+silently change modes or imply that analysis attached footage to generation.
+
+Write a timestamped plan from what you actually inspected: opening state,
+main action, the relationship between changes on screen, camera, pacing, and
+ending. List **must preserve** and **approved changes**. A drink emptying while
+an indicator fills must not become a stationary drink with decorative hearts
+unless the person chooses that change. When they revise the idea, remove
+superseded directions. Inspect motion around the key action; cut times and a
+few still frames cannot establish that suction looks natural.
+
+Assign each image/video a role and distinguish generation inputs from editing
+assets. Plan exact logos, lettering, percentages, and watermarks as editing
+with the supplied assets. Record position, size, opacity and start/end times;
+"center" means both horizontal and vertical center. Honor a clear placement
+instruction; resolve ambiguity that would obscure an essential feature before
+rendering. Before the paid video approval, verify that a local shell or
+available editing tool can apply those changes and upload the finished video.
+If editing or upload is unavailable, disclose that limit and include a desktop
+or user-upload handoff in the plan; never assume the 64 KB inline uploader can
+carry an edited video.
+
+Keep this plan with the approved brief. When `first_post_approve` exposes
+`brief.creativePlan`, supply:
+
+- `referenceMode`: `direct`, `structure_only`, or `none`;
+- `referenceKind`: `own` or `reel` when footage is involved;
+- `referenceFileIds`: the inspected/selected clip IDs (direct mode needs the
+  actual attached video IDs in `@video1`, `@video2`, … order; a local-only
+  structure analysis may have none);
+- `mustPreserve`, `approvedChanges`, and `finishing`: concise lists.
+
+The server binds the plan to that video approval and returns it on resume.
+If an older connector lacks this field, preserve the same information in
+`brief.text` and explicitly check the references before every submission.
+A saved plan describes the person's intent, not proof of ownership or a
+promise that generation will match it perfectly.
 
 ## Phase 6b — Their own clip
 
@@ -466,8 +537,10 @@ is; follow that answer and do not ask again.
    Wan may refuse a 15 s output with a reference clip. `first_post_approve` gets
    the same `settings`, `references` included.
 3. **It is a structure reference.** Read it the way Phase 6 reads a reel
-   (`video_pattern_read`, or the local read). Unlike a reel, their own clip may
-   also go in as `@video1`.
+   (`video_pattern_read` with `referenceKind: "own"` when supported, or the local
+   read). Keep the own-footage kind on subsequent polls and in the saved brief.
+   Switch to direct mode only when
+   the person chooses it and the clip is eligible; structure-only mode never attaches `@video1`.
 
 ## Phase 7 — The video
 
@@ -476,8 +549,9 @@ quote, no approval, no job — Phase 8 attaches the clip.
 
 1. Write a text-to-video prompt that **mirrors the pattern with the brand's own
    content**: the same beat lengths and camera behaviour, the brand's product,
-   setting and tone from Phase 0 and the built brand memory. No on-screen text —
-   the models render it as gibberish; captions belong in the post. For a
+   setting and tone from Phase 0 and the built brand memory. Add exact on-screen
+   text and logos during the agreed editing step instead
+   of asking generation to reproduce their lettering. For a
    personal brand the prompt describes setting, action and tone — never the
    person's face or body — and no photo of them goes in as a reference. The
    only video reference is the person's own clip (Phase 6b, `@video1`); a reel
@@ -485,18 +559,27 @@ quote, no approval, no job — Phase 8 attaches the clip.
 2. **Settings are the preset** — `9:16`, `720p`, 15 seconds, no model — or the
    alternative the person picked from a quote. A reel shorter than 15 seconds
    may set a shorter duration (never below 4). Never guess a model name or a
-   resolution.
+   resolution. Honor an explicitly requested model using the quote
+   tool to resolve its supported name and settings. Adapt prompt syntax and
+   tags for it while preserving the approved concept and action.
 3. Call `video_quote` again with the final prompt and those settings — and the
    `references` from Phase 6b, if any — the build has changed the balance. Show
-   the person the prompt, `price.credits` and what
-   will be left, and ask for a yes. An `invalid` verdict names the problem and
+   one complete review: the full prompt, timestamped plan, reference mode,
+   actual attached file names and prompt tags, resolved model, duration, ratio,
+   resolution, `price.credits`, and remaining balance. Say explicitly whether
+   the actual reference video is attached. List editing assets separately.
+   Verify each tag maps to an eligible uploaded file in `references`; an
+   `@video1` mention, URL, or local path alone does not supply footage. Ask for
+   one yes to this exact package, not repeated approvals of its unchanged parts.
+   An `invalid` verdict names the problem and
    priced `alternatives`; an `unaffordable` one names the shortfall: offer
    `recommended` before any top-up, and quote the one they pick.
 4. After the yes, generate a unique `idempotencyKey` for THIS generation and call
    `first_post_approve` with `step: "video"`, the exact `video_generate`
    arguments you will send (minus the key) as `settings`, that
    `idempotencyKey`, the quote (`credits` = `price.credits`, `source: "quote"`)
-   and the brief. Then call `video_generate` with that same key and those same
+   and the brief with its creative plan. Then call `video_generate` with that
+   same key and those same
    arguments, the project as `folderId`, and the quote's `approval`
    (`approvedCredits` and `approvedPricingVersion`); record the `jobId` as soon
    as it answers. Without `first_post_state`, save the key and the full request
@@ -508,8 +591,22 @@ quote, no approval, no job — Phase 8 attaches the clip.
    `billing` (a refused job has `chargedCredits: 0`), and ask before trying a
    different prompt; a different prompt is a new paid job with a new quote, a
    new yes and a new key.
-6. `video_get_result` returns the `fileId` and a preview link. Share the link and
-   ask whether to use it or try once more.
+6. `video_get_result` returns the `fileId`, the file's `webUrl` and an expiring
+   `downloadUrl`. The `webUrl` is the preview link: paste it as returned (never
+   the `downloadUrl`, which is for fetching bytes) and inspect the output against
+   the approved plan. Check the initial, middle,
+   and final states, main action, subject identity, timing and ending. Show any
+   mismatch instead of calling it finished. When a local shell or editing tool
+   and upload path are available, complete authorized editing with exact assets,
+   verify placement/timing and final media properties, and attach the finished
+   version. Save raw and finished outputs separately. If editing or upload is
+   unavailable, attach the available generated file to the same draft, label it
+   as unfinished with the pending changes, and offer a desktop handoff or ask
+   the person to upload their edited file. Keep the plan and existing draft IDs
+   for that handoff; replace the draft attachment once the edited file is ready.
+   Never claim the raw draft includes overlays that were not applied. Ask
+   for a new paid approval only when regeneration is needed. Comparison videos
+   do not replace the selected draft until the person chooses one.
 
 The **text-to-video** skill has the prompt craft (anchors, camera language,
 what the models can and cannot do); use its patterns, not its endpoint details.
@@ -519,20 +616,22 @@ what the models can and cannot do); use its patterns, not its endpoint details.
 1. Write the caption in the brand's voice from Phase 0 and the brand memory: one
    hook line, the body, a call to action; hashtags separately, without `#`. No
    claims the person did not give you — no credentials, rankings, numbers or
-   testimonials they did not state, and nobody else's name.
+   testimonials they did not state, and nobody else's name. Preserve any
+   caption credit required by the person or workspace, before the hashtags.
 2. `post_draft_create` with `brandId` = the `kbEntityId`, the platform, the
    caption and hashtags. Keep `postId` and `version` (**What you save**).
-3. `post_video_attach` with the video's `fileId` — the generated video's from
-   `video_get_result`, or the person's own clip's from Phase 6b — and the post's
+3. `post_video_attach` with the finished video's `fileId` — upload the edited
+   deliverable when finishing was needed, otherwise use `video_get_result`,
+   or the person's own clip from Phase 6b — and the post's
    current `version`. 409 means the post moved — `post_get`, then attach again.
-4. Share the video's preview link and the draft's **`webUrl`**. That page is
-   where the person reviews, approves and publishes, in Folio; you never approve
-   or publish from here.
+4. Share the video's preview link and the draft's **`webUrl`**, both pasted from
+   the results. That page is where the person reviews, approves and publishes, in
+   Folio; you never approve or publish from here.
 
 Say what happened in one short list: the brand (link), the material count, the
-video (preview link), the draft (link), and the credits spent — as
-`first_post_state`'s `budget.spent` and the job's `billing` report them, never a
-number you added up yourself.
+video (preview link), the draft (link) — every link pasted from a tool result —
+and the credits spent — as `first_post_state`'s `budget.spent` and the job's
+`billing` report them, never a number you added up yourself.
 
 ## When something goes wrong
 
@@ -541,7 +640,7 @@ number you added up yourself.
 | `brand_create` is not a tool | The connector is not set up or the person is on an API key. Send them to Folio's Connect your AI tools guide; stop. |
 | `insufficient_scope` | Name the missing scope (`write` or `render`) and ask them to reconnect and approve it. |
 | 409 `brand_exists` | Use the `kbEntityId` in `details`; do not create another brand. |
-| Two or more brands with the person's name (no website) | List name · id · link and let the person pick, or say "new". Never pick silently. |
+| Two or more brands with the person's name (no website) | List name · id · `webUrl` (both pasted from the hit) and let the person pick, or say "new". Never pick silently. |
 | `brand_create` may or may not have happened | `file_search` by name in the workspace before creating again; never create twice in one session. |
 | 402 on a paid start | A shortfall; nothing was charged. Say the numbers it carries (`requiredCredits`, `spendableCredits`, `shortfallCredits`), offer its cheaper `quote.recommended` or `alternatives` before a top-up, and quote the one the person picks; a new submission needs their yes and a NEW `idempotencyKey`. The `billingWebUrl` is where a workspace owner adds credits. |
 | 400 `INVALID_ADVANCED_OPTIONS` on `video_generate` | The settings are not supported; nothing was charged. Offer the priced alternatives it carries, quote the one the person picks, and submit it with their yes and a NEW key. |
@@ -552,7 +651,8 @@ number you added up yourself.
 | 409 `brand_memory_build_in_progress` | Poll `brand_build_status`; never start a second build. |
 | Build `failed` | Report its `error` sentence. Do not rebuild on your own. |
 | `upstream_unavailable` on a paid start | Read your saved state, then the status, before anything else; retry only with the same `idempotencyKey` and body. |
-| Reel will not download | Ask for the file, or for one of their own posts. Never bypass a login wall. |
+| Reel will not download (`yt-dlp`, the browser or a fetch) | Stop; do not try another route. Ask for the MP4 uploaded to the campaign project with Upload files, not Add link (Phase 6, step 2), or for one of their own posts. Never bypass a login wall. |
+| `video_pattern_read` says the file is a saved link | A link card holds only the URL. Ask the person to upload the video file itself with Upload files (not Add link), then call again with the new `fileId`. |
 | `video_pattern_read` answers `analysing` for more than about two minutes, or `failed` | Fall back to the local read (Phase 6, steps 2–5) if you can run `ffmpeg`; in a cloud sandbox, say so once and write the pattern from the person's description of the reel. |
 | `first_post_state` says `approve_video` but the person's clip is the post | Do not quote or generate. Upload the clip to the campaign project if it is not there yet, then `post_video_attach` it; the server then recognises the attached clip and moves on. |
 | Video `failed` with `REFERENCE_VIDEO_PRIVACY` | The reference clip shows a real person; nothing was charged. Offer to attach the clip to the post as it is (Phase 6b, step 1) or to use it as structure only; a new prompt is a new paid job with a new quote, a new yes and a new key. |
@@ -584,3 +684,9 @@ number you added up yourself.
 - **The links are the finish.** The video preview and the draft's `webUrl` end
   the job; approval and publishing happen in Folio, and the credits spent are
   what `first_post_state`'s budget and the job's `billing` say.
+- **Links are pasted, never typed.** Every link you show is copied character for
+  character from a tool result — a `webUrl`, a preview link, or a `link` field
+  when the result carries one (then prefer `link`). Never type an id, never
+  build a URL from an id, never shorten or "fix" one: two ids in one session
+  can differ in their last two characters. A result with no link gets no link;
+  say where the thing lives instead.
