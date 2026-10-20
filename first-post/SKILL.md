@@ -1,6 +1,6 @@
 ---
 name: first-post
-description: Take a new Continuity workspace from nothing to a reviewable social post draft with the person's own agent — for a business, a product, or the person themselves (a personal brand with no website and no files is a complete answer). Create the brand, hand it their material or a one-page brand brief they approve, quote the cost, run ONE brand memory build, study a reference reel for pacing or use their own clip as the post or as a reference, generate a short vertical video, and draft the post under the brand. Use when a user says "make my first post", "set up my brand and make a post", "I'm the brand", "start my first campaign", "turn this reel into a post for my brand", "use my video for my first post", or arrives from Folio's "make your first post with your own agent" onboarding prompt. Requires the MCP connector (brand and post tools); with only an API key, point them to the connector first.
+description: Take a new Continuity workspace from nothing to a reviewable social post draft with the person's own agent — for a business, a product, or the person themselves (a personal brand with no website and no files is a complete answer). Create the brand, hand it their material or a one-page brand brief they approve, quote the cost, run ONE brand memory build, study a reference reel for pacing or use their own clip as the post or as a reference, generate a short vertical video, and draft the post under the brand. Use when a user says "make my first post", "set up my brand and make a post", "I'm the brand", "start my first campaign", "turn this reel into a post for my brand", "use my video for my first post", "try the example", or arrives from Folio's "make your first post with your own agent" onboarding prompt — including one that names an example kit. Requires the MCP connector (brand and post tools); with only an API key, point them to the connector first.
 ---
 
 # First Post
@@ -19,10 +19,12 @@ connected to `/mcp`): it uses `first_post_state`, `first_post_approve`,
 `brand_build_start`, `brand_build_status`, `brand_pending_read` /
 `brand_pending_commit`, `video_quote`, `video_generate` / `video_get_status` /
 `video_get_result`, `post_draft_create`, `post_get`, `post_video_attach`,
-`file_search`, `folder_list_files`, and `project_list` / `project_create` —
+`file_search`, `folder_list_files`, and `project_list` (to find the workspace) —
 plus, where your tool list has them, `file_upload_inline` and `file_create` for
 uploads from a cloud sandbox (**When an upload is blocked**), and
-`video_pattern_read`, which reads a reel's structure on the server (Phase 6).
+`video_pattern_read`, which reads a reel's structure on the server (Phase 6), and
+`first_post_example_start`, which sets up an example kit on the server (**An
+example kit**).
 If `brand_create` is not among your tools, say so and send the person to the
 **Connect your AI tools** guide in Folio to add the connector — the brand and
 post routes do not accept an API key.
@@ -54,7 +56,7 @@ to reconnect.
 
 Start every session with `first_post_state` (or your saved file, **What you
 save**, below) and resume where it says you are: follow `next.action` and its
-`reason`, reuse every id it names, and never create a second campaign, brand,
+`reason`, reuse every id it names, and never create a second brand,
 build or post. When `next.requiresFreshApproval` is true, ask the person again
 before any paid call. Never restart the intake because a session ended.
 
@@ -76,11 +78,11 @@ the material and the reel reach the server, and nothing else.
   on a remote machine that cannot see the person's files. Its network usually
   allows package registries and code hosts, and may refuse the storage host that
   uploads go to and the site a reel lives on. Everything before the material is
-  MCP-only and works there: run the intake (Phase 0), the project (Phase 1) and
+  MCP-only and works there: run the intake (Phase 0), the workspace (Phase 1) and
   the brand (Phase 2) as written. In the Phase 0 message, ask for the reel as a
   file attached to the chat, not a link — or, when `video_pattern_read` is in
-  your tool list, say they can upload the video file to the campaign project in
-  Folio once it exists, with Upload files — not Add link, which saves only the
+  your tool list, say they can upload the video file to the brand's Generated folder in
+  Folio once the brand exists, with Upload files — not Add link, which saves only the
   URL (Phase 6). Before Phase 3, tell the person once that uploads from
   here may be blocked, and that their progress is kept if they are.
 
@@ -89,11 +91,11 @@ Nothing about credits, quotes or approvals changes with where you run.
 ## What you save
 
 With `first_post_state` in your tool list, the server keeps the record: once the
-journey is open, each project, brand, upload, build, video and post call that
+journey is open, each brand, upload, build, video and post call that
 succeeds is written into it, and `first_post_approve` writes each yes with its
 quote, settings and `idempotencyKey`. You save nothing by hand; you read it back.
 Without that tool, write
-`{workspaceId, projectId, kbEntityId, buildId, idempotencyKey, jobId, postId, version}`
+`{workspaceId, kbEntityId, buildId, idempotencyKey, jobId, postId, version}`
 — whatever you have so far — to `first-post-state.json` in the folder you are
 working in, before each paid call and whenever an id arrives.
 
@@ -103,6 +105,63 @@ deciding what to do next: a saved `buildId` means poll, not start; a saved
 `idempotencyKey` means replay the same key and body only to learn the outcome,
 never to generate again; a saved `kbEntityId` means reuse, not create. The
 person never repeats an answer because your session ended.
+
+## An example kit
+
+Folio's onboarding page can offer an **example kit**: a ready-made sample brand
+— a brief, a product photo, a reference video, a concept and a suggested
+prompt — published on the public asset site. The person picks "An example" or
+"My own brand" on that page, and the prompt they paste says which:
+
+- **They chose an example.** The prompt names the kit (`kit <id>`) and its
+  folder, `https://assets.stagecontinuity.com/onboarding/kits/<id>/` (or
+  `assets-dev.` on dev). Do not ask whether they want their own brand; follow
+  the steps below instead of Phase 0 to Phase 3. If they say they want their
+  own brand after all, run Phase 0 as written.
+- **They chose their own brand.** Run Phase 0 as written and do not offer an
+  example.
+- **The prompt names no kit.** Nothing here applies.
+
+1. **Set it up.** The example makes no project: the brand holds the post, and
+   everything it needs goes to the brand.
+   - With `first_post_example_start` in your tool list, call it with the kit id
+     and the workspace. It creates the brand "<kit name> (example)", copies the
+     kit's brief and product photo in as brand material and its reference video
+     into the brand's Generated folder, records them in `first_post_state`, and
+     returns their `fileId`s with the kit's concept, suggested prompt and
+     finishing. Create, upload or copy nothing for the example yourself, and
+     never `brand_create` a second copy; after an uncertain outcome, call
+     `first_post_state` and reuse what it names.
+   - Without it, on the person's computer: read `kit.json` from the kit folder,
+     download each file it lists from the same folder and check each one's
+     `sha256` against `kit.json` — on a mismatch, stop and say so; never use
+     that file. Then `brand_create` named "<kit name> (example)" — no
+     `project_create` — upload the brief and the product photo as material
+     (Phase 3), and the reference video to the brand without `kbMaterial`
+     (`file_upload_start` with `sessionId` = the brand's `kbEntityId`); it lands
+     in the brand's Generated folder.
+   - Without it, in a cloud sandbox: say in one line that the example needs this
+     agent's desktop app or terminal, and offer their own brand (Phase 0).
+2. **Show it.** Say in one line that this is an example brand created in their
+   workspace — the brand, the video and the credits are real, and every paid
+   step still needs their yes. Show the concept (title and one line), the
+   preview video's link (`card.previewVideo` in the kit folder — the motion
+   their post will follow), the audience, the voice and the platform, and ask
+   once: "Use this example as-is, or change anything?" The answer is the
+   intake, not a yes to any paid step.
+3. **Then the usual flow.** The brand is new, so Phase 4 quotes its build and
+   the video together, and Phase 5 runs the one build. The reference mode is a
+   **direct video reference** (Phase 6): the product photo is `@image1`, for
+   the product's look; the reference video is `@video1`, for staging, timing
+   and camera only, as `kit.json`'s `generation.references` says. It is
+   already in the brand's Generated folder, so skip the download, but still
+   read it (`video_pattern_read`, or a contact sheet), and give the privacy
+   notice with the first quote as usual. As in every journey, the brand's
+   `kbEntityId` is the `folderId` for `video_quote` and `video_generate` and
+   the place for any upload. In Phase 7, use the kit's suggested prompt
+   (`generation.prompt`) unless the person changed something, and plan its
+   `finishing` overlays as the editing step. Never claim anything about the
+   example business beyond the kit's brief.
 
 ## Phase 0 — Who and what
 
@@ -179,15 +238,15 @@ holds. One does not cover the other. So, before you plan uploads or analysis:
    > runs my commands may not have the permission the app you're typing in has —
    > one does not cover the other. Easiest fix: copy it into your Public folder
    > (or into `<the folder I'm working in>`) and tell me the new name. Or upload
-   > it to the `<campaign project>` in Folio and I'll fetch it from there.
+   > it to `<brand files link>` in Folio and I'll fetch it from there.
 
 4. **Offer one recovery path per failure, in this order.** (a) A copy into an
    accessible folder — the person's `~/Public`, the folder you are running in,
    or any folder outside Documents, Desktop and Downloads; fastest, and it needs
-   no network. (b) An upload in the web app to the campaign project, which you
+   no network. (b) An upload in the web app to the brand's Generated folder, which you
    then read through the **file-management** skill (`GET /v1/files/{fileId}`;
-   you fetch the download URL yourself) — for the reel this is a plain project
-   file, never material, and you delete it from the project after the analysis
+   you fetch the download URL yourself) — for the reel this is a plain
+   file, never material, and you delete it from the folder after the analysis
    if the person wants. (c) A chat attachment, only when your client is known to
    hand you a path you can read; do not promise it. Never (d): changing the
    person's OS permissions — no `tccutil`, no scripted System Settings, no Full
@@ -210,16 +269,26 @@ holds. One does not cover the other. So, before you plan uploads or analysis:
 
 ## Phase 1 — A place to work
 
-You need a **workspace id** for the brand and a **project** for the video.
+You need a **workspace id** for the brand. **Do not create a project**: the
+brand holds this post.
 
 - If the onboarding prompt named a `workspaceId`, use it.
 - Otherwise call `project_list`. Its `workspaces` map names the workspaces the
   person can see; with exactly one, use it. With none (a brand-new account and
   no projects yet), ask the person to paste the workspace id shown on their
   Folio onboarding page.
-- Create one project for this campaign with `project_create` (name it after the
-  brand, e.g. "Acme — first post"). Its id is the `folderId` the video lands in
-  and the session the reel is uploaded to.
+- Everything you upload or generate for the post goes to the brand (Phase 2).
+  Pass the brand's `kbEntityId` as `video_generate`'s `folderId`, and as
+  `file_upload_start`'s `sessionId` **without** `kbMaterial` for a plain file
+  (a reel, their own clip): the server puts both in the brand's **Generated
+  folder**. The person sees it on the brand page's Files tab, Generated view —
+  the `<brand files link>` is the brand's `webUrl` with
+  `?tab=all-files&files=generated`. A file the person uploads there themselves
+  you find by listing that folder: `folder_list_files` on the brand's
+  `kbEntityId` answers `generatedFolderId` (the brand's own listing holds only
+  its material), and `folder_list_files` on that id lists the folder. Fall back
+  to `file_search` by its name for a file not listed yet. `generatedFolderId` is
+  a folder id: never pass it as a `brandId` or `kbEntityId`.
 
 ## Phase 2 — The brand
 
@@ -313,7 +382,7 @@ one:
 
    > I couldn't upload your files from here: this chat runs in a cloud sandbox
    > whose network blocks the storage service. Your progress is saved — the
-   > project and the brand stay as they are, nothing will be created twice, and
+   > brand stays as it is, nothing will be created twice, and
    > no credits have been spent. You can:
    >
    > a) open this chat in the Claude desktop app on the computer that has the
@@ -324,14 +393,15 @@ one:
    >    network settings.
 
 5. **When they come back**, call `first_post_state` and follow `next`: it resumes
-   the same project and brand. Never create either again, and never re-run the
+   the same brand. Never create it again, and never re-run the
    intake.
 
 **Material rule.** Material becomes the brand's memory. Upload only what belongs
 to the person: their guidelines, product sheets, photos, their own posts, the
 brief they adopted. Never upload someone else's reel, logo or copy as material.
 The reference reel from Phase 6 is a pacing reference, not brand content; it
-never goes in here. Their own clip from Phase 6b goes to the campaign project,
+never goes in here. Their own clip from Phase 6b goes to the brand's Generated folder
+(a plain upload),
 not here, unless they also want it in the brand's memory.
 
 Upload **everything** before the build. The build reads what is there when it
@@ -352,7 +422,7 @@ reference plan; Phase 7 writes the final prompt from the built brand memory,
 quotes it again, and obtains a separate generation approval.
 
 1. With the material in place, call `video_quote` with `brandId` = the brand's
-   `kbEntityId`, `folderId` = the campaign project, the planned video at the
+   `kbEntityId`, `folderId` = the same `kbEntityId`, the planned video at the
    preset (`ratio: "9:16"`, `resolution: "720p"`, `duration: 15`, no model) and a
    provisional prompt and the selected references. Show the person `workflow.steps` (the brand build —
    an estimate until it runs —, the video, the draft at 0),
@@ -424,21 +494,20 @@ is Phase 6b; it may also be read the way a reel is.
 
 1. **Prefer `video_pattern_read` when it is in your tool list.** The server
    reads the reel's structure for you, free, and you need no `yt-dlp` or
-   `ffmpeg`: the person uploads the reel's video file (the MP4) to the campaign
-   project as a plain file (never material) with Upload files — a saved link
+   `ffmpeg`: the person uploads the reel's video file (the MP4) to
+   the brand's Generated folder as a plain file (never material) with Upload files — a saved link
    (Add link) holds only the URL, and `video_pattern_read` answers that it is a
    link, not a video — in Folio, or you do it with `file_upload_start` /
-   `file_upload_complete`, `sessionId` = the project, no `kbMaterial` —, you
-   find its `fileId` (`folder_list_files` on the project, or `file_search`),
+   `file_upload_complete`, `sessionId` = the brand's `kbEntityId`, no
+   `kbMaterial` —, you find its `fileId` (list the Generated folder as in Phase 1),
    and call `video_pattern_read` with that `fileId` and `referenceKind: "reel"`
    when the tool exposes it. It answers `ready` with
    the pattern (the hook, the beats with their seconds, camera behaviour,
    on-screen text, tone), `analysing` (wait 10 seconds and call again, for up
    to about two minutes), or `failed` (fall back to the local read, steps 2–5).
    In a cloud sandbox (**Where you are running**) this is the path — the reel's
-   site is usually blocked there — so say so once and give the project's
-   `webUrl` for the upload, pasted from `project_create`'s result (or from
-   `project_list` if you no longer have it); without the tool, use the file
+   site is usually blocked there — so say so once and give the
+   `<brand files link>` for the upload; without the tool, use the file
    the person attached in Phase 0.
 2. **Otherwise get the file locally.** In a cloud sandbox, do not try `yt-dlp`
    — the reel's site is usually blocked there too: use the file the person
@@ -447,9 +516,9 @@ is Phase 6b; it may also be read the way a reel is.
    if `yt-dlp` is installed. Instagram often refuses anonymous downloads. **If any
    download fails** — `yt-dlp`, the browser, `curl` or a fetch — stop at once and
    do not try another route. Say in one message: "I couldn't download that Reel.
-   Save the MP4 on your device and upload it to <campaign project link> with
-   Upload files (not Add link), then tell me when it's there." — the link pasted
-   from `project_create`'s `webUrl`. Then read it with step 1, or through the
+   Save the MP4 on your device and upload it to <brand files link> with
+   Upload files (not Add link), then tell me when it's there." — the brand's
+   `webUrl` with `?tab=all-files&files=generated`. Then read it with step 1, or through the
    **file-management** skill when `video_pattern_read` is not in your tool list.
    One of their own posts is an equally good reference (their own content is the
    most reliable). Do not try to bypass a login wall. A path they give you goes
@@ -470,7 +539,7 @@ is Phase 6b; it may also be read the way a reel is.
    close-up on texture" — never the original's product, person or words.
 6. **Keep the reel out of the brand; send it to generation only when chosen.**
    Never upload it as material. When the person chose it as a direct video
-   reference, upload it to the campaign project as a plain file (no
+   reference, upload it to the brand as a plain file (no
    `kbMaterial`) and attach it in Phase 7 the way Phase 6b step 2 attaches
    their own clip: `references: [{type: "file", fileId: "<id>", tag: "@video1"}]`
    in `video_quote` and `video_generate`, `@video1` named in the prompt, the
@@ -480,7 +549,7 @@ is Phase 6b; it may also be read the way a reel is.
    prompt, and a clip that shows a real person is refused
    (`REFERENCE_VIDEO_PRIVACY`, nothing charged) — on that refusal, offer
    structure only. Otherwise the reel stays structure only. If the person wants
-   it kept, it stays in the campaign project as a plain file; otherwise offer
+   it kept, it stays in the brand's Generated folder; otherwise offer
    to delete it there, and your working copy, at the end.
 
 ### Agree on reference use and the action to preserve
@@ -533,11 +602,11 @@ A clip the person made themselves is their content: it may be the post, the
 material for a new video, or a structure reference. Phase 0 recorded which it
 is; follow that answer and do not ask again.
 
-1. **It is the post.** Upload it to the campaign project as a plain file —
-   `file_upload_start` with `sessionId` = the project, no `kbMaterial`, the
+1. **It is the post.** Upload it to the brand as a plain file —
+   `file_upload_start` with `sessionId` = the brand's `kbEntityId`, no `kbMaterial`, the
    exact byte size → PUT → `file_upload_complete` — or, from a cloud sandbox,
-   have the person upload it in Folio and find its `fileId` with
-   `folder_list_files`. Skip Phase 7 entirely: no quote, no credits. In Phase 8,
+   have the person upload it to the `<brand files link>` in Folio and find
+   its `fileId` by listing the Generated folder (Phase 1). Skip Phase 7 entirely: no quote, no credits. In Phase 8,
    `post_video_attach` that `fileId`.
 2. **It is material for a new video.** Phase 7 runs with the clip as `@video1`:
    upload it as above, pass
@@ -594,7 +663,7 @@ quote, no approval, no job — Phase 8 attaches the clip.
    `idempotencyKey`, the quote (`credits` = `price.credits`, `source: "quote"`)
    and the brief with its creative plan. Then call `video_generate` with that
    same key and those same
-   arguments, the project as `folderId`, and the quote's `approval`
+   arguments, the brand's `kbEntityId` as `folderId`, and the quote's `approval`
    (`approvedCredits` and `approvedPricingVersion`); record the `jobId` as soon
    as it answers. Without `first_post_state`, save the key and the full request
    to your file first. A new key means a new paid job. After an uncertain
@@ -665,10 +734,12 @@ and the credits spent — as `first_post_state`'s `budget.spent` and the job's
 | 409 `brand_memory_build_in_progress` | Poll `brand_build_status`; never start a second build. |
 | Build `failed` | Report its `error` sentence. Do not rebuild on your own. |
 | `upstream_unavailable` on a paid start | Read your saved state, then the status, before anything else; retry only with the same `idempotencyKey` and body. |
-| Reel will not download (`yt-dlp`, the browser or a fetch) | Stop; do not try another route. Ask for the MP4 uploaded to the campaign project with Upload files, not Add link (Phase 6, step 2), or for one of their own posts. Never bypass a login wall. |
+| An example kit's `kit.json` or a file it lists will not download | Say so once and offer their own brand (Phase 0); do not fetch the kit from anywhere else. |
+| A downloaded kit file's `sha256` does not match `kit.json` | Stop; do not upload or use that file. Say so once and offer their own brand. |
+| Reel will not download (`yt-dlp`, the browser or a fetch) | Stop; do not try another route. Ask for the MP4 uploaded to the brand's Generated folder with Upload files, not Add link (Phase 6, step 2), or for one of their own posts. Never bypass a login wall. |
 | `video_pattern_read` says the file is a saved link | A link card holds only the URL. Ask the person to upload the video file itself with Upload files (not Add link), then call again with the new `fileId`. |
 | `video_pattern_read` answers `analysing` for more than about two minutes, or `failed` | Fall back to the local read (Phase 6, steps 2–5) if you can run `ffmpeg`; in a cloud sandbox, say so once and write the pattern from the person's description of the reel. |
-| `first_post_state` says `approve_video` but the person's clip is the post | Do not quote or generate. Upload the clip to the campaign project if it is not there yet, then `post_video_attach` it; the server then recognises the attached clip and moves on. |
+| `first_post_state` says `approve_video` but the person's clip is the post | Do not quote or generate. Upload the clip to the brand if it is not there yet, then `post_video_attach` it; the server then recognises the attached clip and moves on. |
 | Video `failed` with `REFERENCE_VIDEO_PRIVACY` | The reference clip shows a real person; nothing was charged. Offer to use it as structure only, or — when it is their own clip — to attach it to the post as it is (Phase 6b, step 1); a new prompt is a new paid job with a new quote, a new yes and a new key. |
 | A PUT to the upload URL fails with a proxy 403/407, "CONNECT tunnel failed" or a refused connection to the storage host | A network policy, not a glitch — usually a cloud sandbox. Do not retry it by any other route. Follow **When an upload is blocked** (Phase 3): record it through `first_post_state` if it takes `uploadBlocked`, send small files and the brief inline if those tools exist, otherwise one message with the three options. Progress is saved; nothing is created twice. |
 | A path exists (listing, `stat`) but reading it fails with "Operation not permitted" / "Permission denied" | Say so once, keep the intake, offer the accessible-folder copy or the web upload (**Local files**). Do not retry the same path; do not change OS permissions. |
@@ -682,7 +753,8 @@ and the credits spent — as `first_post_state`'s `budget.spent` and the job's
 - **Their content only, as material.** Material is the person's own; their own
   clip may be the post or a reference; someone else's reel never enters the
   brand, and enters generation only as a direct reference they chose, after
-  the privacy notice.
+  the privacy notice. An example kit's files are material only for its own
+  "(example)" brand.
 - **One build.** Everything uploaded first, then one confirmed build.
 - **Quote first, then a yes per step.** The remaining workflow is quoted before
   the first paid step; every paid step is then named, priced and confirmed on its

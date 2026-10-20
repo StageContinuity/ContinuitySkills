@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/CheehooLabs/SpureeSkills.git",
-  "commit": "69fc6a374e588e456696a9d18caa9e87a80abbd6",
+  "commit": "013aad20b8f33d91ec0ac95edb6f6234f03c2aa3",
   "skills": [
     "authentication",
     "file-comment",
