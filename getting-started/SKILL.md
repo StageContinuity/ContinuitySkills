@@ -62,6 +62,14 @@ walking an entire folder tree.
 - “Share or unshare a project.”
 - “Show, accept, decline, cancel, or resend a project invitation.”
 
+**Tell the Continuity team**
+
+- “Report this bug to the Continuity team.” / “Send them a feature request.”
+- “What happened to the bug report I sent?”
+
+Use **report-feedback** for these: it shows the exact report first and files
+it only after the user says yes.
+
 The public Continuity skills cover cloud storage and collaboration, plus the
 **first-post** playbook over the MCP connector — a brand memory build and one
 short generated video, both paid and each confirmed by the person first. Do not
