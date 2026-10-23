@@ -29,12 +29,17 @@ ChatGPT.
 
 Connect Claude Code, Claude Code Web & Cowork, ChatGPT, Codex, or OpenClaw — via the OAuth connector or skills + API keys. See [INSTALL.md](./INSTALL.md).
 
+## Shared work collaboration
+
+[Work collaboration](work-collaboration/SKILL.md) lets an external agent discover and ask explicitly shared Continued works without installing the desktop app. The server adapter must be deployed first; see the skill for REST and MCP setup, safe retries, and the PLOCAN demo.
+
 ## Available Skills
 
 | Skill | Description |
 | --- | --- |
 | [Getting Started](./getting-started/SKILL.md) | Learn what Continuity can do and complete a safe guided first run |
 | [First Post](./first-post/SKILL.md) | Take a new workspace from nothing to a reviewable post draft with your own agent over the MCP connector — a business, a product or a personal brand; your own material or a brief you approve, a quote before the first paid step, one confirmed brand memory build, a reel studied for pacing, a short vertical video, the draft under the brand |
+| [Work Collaboration](./work-collaboration/SKILL.md) | Find and ask explicitly shared Continued works from your own agent, without the desktop app |
 | [Authentication](./authentication/SKILL.md) | Obtain JWT tokens, manage API keys |
 | [Project Management](./project-management/SKILL.md) | Create, list, update, delete, and share projects; browse contents |
 | [Folder Management](./folder-management/SKILL.md) | Find canonical folders in one bounded call, list recent folders, and create, update, delete, browse, or download folder content |
