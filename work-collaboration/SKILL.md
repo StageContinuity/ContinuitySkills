@@ -14,6 +14,20 @@ Send `X-API-Key: $CONTINUITY_API_KEY` (personal unrestricted key) or `Authorizat
 
 On the full OAuth MCP connector (`https://folio.stagecontinuity.com/mcp`), use `work_list`, `work_ask`, `work_answer`. These tools require a server release carrying the external-work adapter; a deployed desktop sharing feature alone does not imply they are available. ChatGPT's retrieval-only connector does not expose these tools.
 
+## MCP calls
+
+When connected through MCP, use these tools directly; do not ask the user to create an API key or install Continued as an extra step. Approve `read` and `write` when connecting: asking creates an answer receipt, so read alone cannot expose `work_ask`.
+
+| Tool | Arguments | Result |
+| --- | --- | --- |
+| `work_list` | `{}` or `{projectID, after}` when known | One page of work metadata and `nextCursor` |
+| `work_ask` | `{workID, requestID, text}` | Answer or pending receipt |
+| `work_answer` | `{workID, requestID}` | Current receipt; never starts generation |
+
+Use `id` from `work_list` as `workID`. Generate one UUID per question and retain it before calling `work_ask`. For a pending answer, obey `retryAfterSeconds` and the recovery rules below. Do not ask the owner to run the work on their Mac.
+
+If the tools are absent, refresh/reconnect the **full** `/mcp` connector and check the granted scopes. A server release is required; never claim these tools exist merely because this skill is installed. The `/mcp/chatgpt` retrieval connector is not this ask-capable endpoint.
+
 ## Journey
 
 1. Ask “List the works shared with me in PLOCAN.” Call discovery with `projectID` when known. Show titles, not raw IDs. If ambiguous ask which work; never guess or read unrelated projects.
