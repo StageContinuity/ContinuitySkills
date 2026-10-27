@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/CheehooLabs/SpureeSkills.git",
-  "commit": "5b36b04f29c04a07c8c2b278b5b03f104526d4ac",
+  "commit": "02352b8908fb4e4b6f7e7fd6120ed580666b5b80",
   "skills": [
     "authentication",
     "file-comment",
@@ -12,6 +12,7 @@
     "project-invitation",
     "project-management",
     "report-feedback",
+    "usage-report",
     "workspace-management"
   ],
   "files": [

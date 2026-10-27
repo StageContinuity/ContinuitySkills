@@ -28,6 +28,7 @@ test("covers every public Continuity skill", () => {
     "project-invitation",
     "project-management",
     "report-feedback",
+    "usage-report",
     "workspace-management",
   ]);
 });

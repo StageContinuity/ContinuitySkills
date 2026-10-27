@@ -62,6 +62,13 @@ walking an entire folder tree.
 - “Share or unshare a project.”
 - “Show, accept, decline, cancel, or resend a project invitation.”
 
+**Monitor usage**
+
+- "How many API calls has this workspace used this month?"
+- "Show me the usage report for this organization."
+
+Use **usage-report** for these.
+
 **Tell the Continuity team**
 
 - “Report this bug to the Continuity team.” / “Send them a feature request.”

@@ -55,6 +55,36 @@
       "reason": "Repository name"
     },
     {
+      "from": "Name it **Spuree**",
+      "to": "Name it **Folio Continuity**",
+      "reason": "The connection name a person types into ChatGPT or claude.ai is the product name, not the bare brand (it collides with other apps called Continuity)"
+    },
+    {
+      "from": "resulting **Spuree** plugin",
+      "to": "resulting **Folio Continuity** plugin",
+      "reason": "Same connection name, in the ChatGPT install step"
+    },
+    {
+      "from": "@Spuree",
+      "to": "@Folio Continuity",
+      "reason": "Same connection name, as the @-mention in ChatGPT"
+    },
+    {
+      "from": "Connect Spuree",
+      "to": "Connect Folio Continuity",
+      "reason": "The ChatGPT desktop app's Connect dialog shows the plugin name"
+    },
+    {
+      "from": "Continue to Spuree",
+      "to": "Continue to Folio Continuity",
+      "reason": "Same dialog's button"
+    },
+    {
+      "from": "Settings > Plugins > Spuree >",
+      "to": "Settings > Plugins > Folio Continuity >",
+      "reason": "ChatGPT lists the plugin under its connection name"
+    },
+    {
       "from": "Spuree",
       "to": "Continuity",
       "reason": "Brand name"

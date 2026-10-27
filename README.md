@@ -48,6 +48,7 @@ Connect Claude Code, Claude Code Web & Cowork, ChatGPT, Codex, or OpenClaw — v
 | [Project Invitations](./project-invitation/SKILL.md) | Manage sharing invitations for non-workspace members |
 | [Workspace Management](./workspace-management/SKILL.md) | List a workspace's members, add a member with a role, change a role, remove a member |
 | [Report Feedback](./report-feedback/SKILL.md) | Send the Continuity team a bug report, feedback or a feature request as the person, after they approve the exact text, and check the status of their own reports — over the MCP connector |
+| [Usage Report](./usage-report/SKILL.md) | Retrieve daily usage reports for a workspace or organization, broken down by API key, MCP client, and user, with allowance tracking |
 
 ## Authentication
 
