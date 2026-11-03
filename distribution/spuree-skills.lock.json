@@ -43,6 +43,30 @@
     {
       "from": "test/workflow-pins.test.mjs",
       "to": "test/workflow-pins.test.mjs"
+    },
+    {
+      "from": "test/image-generation-contract.test.mjs",
+      "to": "test/image-generation-contract.test.mjs"
+    },
+    {
+      "from": "test/music-generation-contract.test.mjs",
+      "to": "test/music-generation-contract.test.mjs"
+    },
+    {
+      "from": "test/project-memory-contract.test.mjs",
+      "to": "test/project-memory-contract.test.mjs"
+    },
+    {
+      "from": "test/usage-report-contract.test.mjs",
+      "to": "test/usage-report-contract.test.mjs"
+    },
+    {
+      "from": "test/voiceover-contract.test.mjs",
+      "to": "test/voiceover-contract.test.mjs"
+    },
+    {
+      "from": "test/workspace-management-contract.test.mjs",
+      "to": "test/workspace-management-contract.test.mjs"
     }
   ]
 }
