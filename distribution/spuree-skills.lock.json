@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/CheehooLabs/SpureeSkills.git",
-  "commit": "02352b8908fb4e4b6f7e7fd6120ed580666b5b80",
+  "commit": "540e52c8dd85c0b08f9c2445894ae88a4cbe4dd3",
   "skills": [
     "authentication",
     "file-comment",
@@ -9,10 +9,14 @@
     "first-post",
     "folder-management",
     "getting-started",
+    "image-generation",
+    "music-generation",
     "project-invitation",
     "project-management",
+    "project-memory",
     "report-feedback",
     "usage-report",
+    "voiceover",
     "workspace-management"
   ],
   "files": [
@@ -39,6 +43,30 @@
     {
       "from": "test/workflow-pins.test.mjs",
       "to": "test/workflow-pins.test.mjs"
+    },
+    {
+      "from": "test/image-generation-contract.test.mjs",
+      "to": "test/image-generation-contract.test.mjs"
+    },
+    {
+      "from": "test/music-generation-contract.test.mjs",
+      "to": "test/music-generation-contract.test.mjs"
+    },
+    {
+      "from": "test/project-memory-contract.test.mjs",
+      "to": "test/project-memory-contract.test.mjs"
+    },
+    {
+      "from": "test/usage-report-contract.test.mjs",
+      "to": "test/usage-report-contract.test.mjs"
+    },
+    {
+      "from": "test/voiceover-contract.test.mjs",
+      "to": "test/voiceover-contract.test.mjs"
+    },
+    {
+      "from": "test/workspace-management-contract.test.mjs",
+      "to": "test/workspace-management-contract.test.mjs"
     }
   ]
 }
